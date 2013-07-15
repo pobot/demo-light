@@ -1,0 +1,4 @@
+*.pyc
+*.un~
+.ropeproject
+*.swp
