@@ -1,7 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" A simple parser for simple configuration of parameters files."""
+""" A simple parser for simple configuration or parameters files.
+
+Python distribution ConfigParser module is great, but sometimes to much complicated
+if you just need to store a basic key/value pairs list.
+
+You'll find here a very basic function dealing with this kind of data, but offering nonetheless
+a content overriding mechanism, based on a list of files loaded in turn. This way you can mimic
+Linux common strategy consisting in using a system wide file /etc/killerapp.cfg, then a per-user
+file ~/.killerapp.cfg and even a per-invocation named whatever you like.
+
+Defaults values are also handled. But no variable interpolation yet.
+"""
 
 import os
 
