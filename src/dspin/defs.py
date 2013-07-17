@@ -7,7 +7,7 @@ Symbolic constants definitions.
 
 Reference documentation available at:
     http://www.st.com/internet/analog/product/248592.jsp
-Have also a llok at this article:
+Have also a look at this article:
     http://www.pobot.org/Driver-evolue-pour-moteur-pas-a.html
 """
 
@@ -52,7 +52,7 @@ dSPIN_REG_STATUS        = 0x19
 #
 # dSpin commands
 #
-# Identifiers names are built by prepending "dSPIN_CMD_" to the register name,
+# Identifiers names are built by prepending "dSPIN_CMD_" to the command name,
 # as it appears in the datasheet.
 #
 
@@ -166,7 +166,7 @@ MASK_22     = 0x3FFFFF
 # The table is indexed by the register number, and contains tuples
 # providing :
 #   - the register size (in bytes)
-#   - the data value used bits as a mask
+#   - the masks for the bits used by the value
 #
 
 dSPIN_REG_DESCR = [
@@ -310,8 +310,8 @@ dSPIN_DIR_FWD = 0x01
 # Action options
 #
 
-dSPIN_ACTION_RESET = 0x00
-dSPIN_ACTION_COPY = 0x01
+dSPIN_ACTION_RESET  = 0x00
+dSPIN_ACTION_COPY   = 0x01
 
 #
 # Factory reset configuration register value
