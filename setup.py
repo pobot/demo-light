@@ -32,14 +32,6 @@ setup(name='pybot',
           'pybot.dmxl',
           'pybot.dspin'
       ],
-      requires=[
-          'dbus(>=1.0)',
-          'pyserial',
-          'smbus'
-      ],
-      package_dir={
-          'pybot':'src'
-      },
       scripts= \
         glob.glob('./bin/*.py') + \
         glob.glob('./demo/*.py')
