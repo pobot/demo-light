@@ -28,7 +28,7 @@
 import argparse
 import sys
 
-from pybot.dmxl omport classes as dmxl, cli as dmxl_cli
+from pybot.dmxl import classes as dmxl, cli as dmxl_cli
 from pybot import cli
 
 __author__ = 'Eric PASCUAL (POBOT)'

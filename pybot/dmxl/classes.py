@@ -24,6 +24,7 @@
 ''' A lightweight Dynamixel bus interface layer '''
 
 import serial
+import threading
 
 class DynamixelBusInterface(object):
     """ Model of a Dynamixel bus interfaces accessed though a virtual serial port.
@@ -56,6 +57,7 @@ class DynamixelBusInterface(object):
         self._serial.flushOutput()
         self._debug = debug or simulate
         self._simulate = simulate
+        self._serial_lock = threading.Lock()
 
     def write(self, data):
         """ Writes data to the bus.
@@ -69,7 +71,10 @@ class DynamixelBusInterface(object):
             data = ''.join([chr(b) for b in data])
 
         if self._debug:
-            print(':Tx> %s' % ' '.join('%02x' % ord(b) for b in data))
+            print(':Tx>[%s] %s' % (
+                threading.current_thread().name,
+                ' '.join('%02x' % ord(b) for b in data)
+            ))
 
         if self._simulate:
             return
@@ -109,18 +114,18 @@ class DynamixelBusInterface(object):
         hdr = self._serial.read(2)
         if hdr != '\xff\xff':
             self._serial.flushInput()
-            raise RuntimeError('invalid reply start : %s' % [ord(b) for b in hdr])
+            raise InvalidReplyStartError([ord(b) for b in hdr])
         rcvid = ord(self._serial.read(1))
         if rcvid != dmxlid:
             self._serial.flushInput()
-            raise RuntimeError('id mismatch: rcv=%d exp=%d' % (rcvid, dmxlid))
+            raise IdMismatchError(rcvid, dmxlid)
         datalen = ord(self._serial.read(1)) - 2
         err = ord(self._serial.read(1))
         data = [ord(c) for c in self._serial.read(datalen)] if datalen else []
         chk = ord(self._serial.read(1))
         if self._debug:
             rx = ' '.join('%02x' % b for b in [0xff, 0xff, rcvid, datalen+2, err] + data + [chk])
-            print('<Rx: %s' % rx)
+            print('<Rx:[%s] %s' % (threading.current_thread().name, rx))
         self._serial.flushInput()
         return data, err
 
@@ -135,7 +140,7 @@ class DynamixelBusInterface(object):
     def _check_error(self, err):
         """ Checks an error status value and raises an exception if not ok"""
         if err:
-            raise RuntimeError('instruction failed with status=%s' % StatusMask.as_str(err))
+            raise InstructionError(err)
 
     def write_instruction(self, dmxlid, instruction):
         """ Sends an instruction and waits for its reply (if not a broadcast).
@@ -150,17 +155,25 @@ class DynamixelBusInterface(object):
             the received reply as a byte list or nothing for a broadcast
 
         Raises:
-            RuntimeError if the received error status is not OK
+            InstructionError if the received error status is not OK
         """
         _bytes = [0xff, 0xff, dmxlid, len(instruction)+1] + instruction
         chk = self._checksum(_bytes[2:])
-        self.write(_bytes + [chk])
-        if dmxlid == DynamixelBusInterface.BROADCASTING_ID:
-            return
+        # wrap the dialog in a lock so that nobody can place a request
+        # until this one is complete
+        with self._serial_lock:
+            self.write(_bytes + [chk])
 
-        reply, err = self.get_reply(dmxlid)
-        self._check_error(err)
-        return reply
+            # no reply expected if broadcasted instruction
+            if dmxlid == DynamixelBusInterface.BROADCASTING_ID:
+                return
+            # same when writing to the id register (0x03)
+            if instruction[0] == Instruction.WRITE_DATA and instruction[1] == Register.Id:
+                return
+
+            reply, err = self.get_reply(dmxlid)
+            self._check_error(err)
+            return reply
 
     def read_register(self, dmxlid, reg):
         """ Reads a register from a given servo.
@@ -230,6 +243,7 @@ class DynamixelBusInterface(object):
     def write_intf_register(self, reg, value):
         """ Same as read_intf_register but for writing."""
         self.write_register(self.INTERFACE_ID, reg, value)
+
     def reg_write_register(self, dmxlid, reg, value):
         """ Writes a register in registered (ie delayed) mode.
 
@@ -272,8 +286,10 @@ class DynamixelBusInterface(object):
 
         try:
             self.write_instruction(dmxlid,
-                                   [Instruction.WRITE_DATA if immed else Instruction.REG_WRITE,
-                                    reg_start] + _bytes
+                                   [Instruction.WRITE_DATA
+                                    if immed
+                                    else Instruction.REG_WRITE, reg_start
+                                    ] + _bytes
                                    )
         except TypeError:
             raise ValueError('values parameter must be iterable')
@@ -402,7 +418,7 @@ class DynamixelBusInterface(object):
             dmxlid:
                 id of the target servo (or interface)
         """
-        for reg in Register._meta.iterkeys(): #pylint: disable=W0212
+        for reg in Register._meta.iterkeys():   #pylint: disable=W0212
             v = self.read_register(dmxlid, reg)
             Register.dump(reg, v)
 
@@ -446,7 +462,7 @@ class USB2AX(DynamixelBusInterface):
         return self.read_register(self.INTERFACE_ID, reg)
 
     def write_intf_register(self, reg, value):
-        raise RuntimeError('interface registers are read-only')
+        raise DmxlError('interface registers are read-only')
 
     def sync_read(self, dmxlids, reg):
         """ Reads a register from several servos in one command.
@@ -574,6 +590,19 @@ class Register(object):
     _m_minval = 3
     _m_maxval = 4
 
+    class __metaclass__(type):
+        def __iter__(cls):
+            """ Makes the class type iterable. """
+            return cls._meta.iterkeys()
+
+    @classmethod
+    def itervalues(cls):
+        return cls._meta.itervalues()
+
+    @classmethod
+    def iterkeys(cls):
+        return cls._meta.iterkeys()
+
     _decoder = {}
 
     @classmethod
@@ -607,6 +636,10 @@ class Register(object):
             disp_value = str(value)
         print ('- [%02d] %-30s : %s (0x%0.2x)' % (reg, cls.label(reg), disp_value, value))
 
+    @classmethod
+    def iter(cls):
+        return cls._meta.iterkeys()
+
 
 BAUDRATE = {
     1: 1000000,
@@ -639,7 +672,7 @@ def _decode_reginst(value):
     return 'yes' if value else 'no'
 
 
-Register._decoder = { #pylint: disable=W0212
+Register._decoder = {   #pylint: disable=W0212
     Register.BaudRate : _decode_baudrate,
     Register.StatusReturnLevel : _decode_status_level,
     Register.AlarmLED : _decode_error_status,
@@ -647,3 +680,29 @@ Register._decoder = { #pylint: disable=W0212
     Register.RegisteredInstruction : _decode_reginst
 }
 
+class DmxlError(RuntimeError):
+    pass
+
+class InvalidReplyStartError(DmxlError):
+    def __init__(self, data):
+        super(InvalidReplyStartError, self).__init__()
+        self.data = data
+
+    def __str__(self):
+        return 'invalid reply start : %s' % self.data
+
+class IdMismatchError(DmxlError):
+    def __init__(self, received, expected):
+        super(IdMismatchError, self).__init__()
+        self.received, self.expected = received, expected
+
+    def __str__(self):
+        return 'id mismatch: rcv=%d exp=%d' % (self.received, self.expected)
+
+class InstructionError(DmxlError):
+    def __init__(self, status):
+        super(InstructionError, self).__init__()
+        self.status = status
+
+    def __str__(self):
+        return 'instruction failed with status=%s' % StatusMask.as_str(self.status)
