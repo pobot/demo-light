@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" Demonstration script for the dSpin package."""
-
 __author__ = "Eric Pascual"
 __email__ = "eric@pobot.org"
 __copyright__ = "Copyright 2013, POBOT"
