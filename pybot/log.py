@@ -20,7 +20,11 @@ logging.basicConfig(
         datefmt='%H:%M:%S'
         )
 
-def getLogger(name, name_width=15):
+NAME_WIDTH = 15
+
+def getLogger(name, name_width=None):
+    if not name_width:
+        name_width = NAME_WIDTH
     logger = logging.getLogger(name.ljust(name_width)[:name_width])
     logger.addHandler(logging.NullHandler())
     return logger
