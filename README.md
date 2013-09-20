@@ -5,20 +5,15 @@ These packages are primarily intended for robotics activities but can be used
 for any other purpose of course.
 
 The repository contains 3 parts :
-- lib/ 
+- pybot/ 
 
-    Contains the Python global package, and should be deployed in a directory 
-    named "pybot" and located in your dist-packages directory, or in any other
-    location in the Python search path. 
-    One day it will be packaged in a more academic way, using setup.py. Be
-    patient.
+    Contains the Python package, and should be deployed in dist-packages
+    directory, or in any other location in the Python search path. 
 
 - bin/
     
-    Some command line scripts (for instance, Robotis Dynamixel servos tools)
+    Some command line scripts (for instance, Robotis Dynamixel servos tools) 
+    and basic demos
 
-- demo/
-    
-    Guess what ;)
 
 Enjoy.
