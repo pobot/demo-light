@@ -6,7 +6,7 @@ trigonometric functions for young students.
 
 The application is composed of :
 
-- a hardwware part, made of two scanning beacons built
+- a hardware part, made of two scanning beacons built
 around AX12 Dynamixel servos (Robotis) and infra-red
 range finders. 
 
