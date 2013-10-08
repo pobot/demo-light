@@ -15,5 +15,9 @@ The repository contains 3 parts :
     Some command line scripts (for instance, Robotis Dynamixel servos tools) 
     and basic demos
 
+- apps/
+    
+    Some applications we wrote, based on PyBot library
+
 
 Enjoy.
