@@ -4,11 +4,13 @@
 """ PyGame related classes used for the GUI of beacons_gui application."""
 
 import logging
-import os
 import math
 import time
 
 import pygame
+
+import beacons_gui.utils as utils
+
 
 class DisplayObject(object):
     """ Root class for graphical objets.
@@ -23,6 +25,7 @@ class DisplayObject(object):
                 the surface on which the object must be drawn
         """
         raise NotImplementedError()
+
 
 class Beacon(DisplayObject):
     """ Graphical object for representing a beacon.
@@ -76,8 +79,16 @@ class Beacon(DisplayObject):
         self._log.setLevel(logging.DEBUG if debug else logging.INFO)
 
         # creates the images used to draw the beacon parts
-        self._img_base = self._make_image('beacon-base.png', self.SIZE)
-        self._img_dish = self._make_image('beacon-dish.png', self.SIZE)
+        self._img_base = pygame.transform.rotozoom(
+            self._make_image('beacon-base.png', self.SIZE),
+            180,
+            1
+        )
+        self._img_dish = pygame.transform.rotozoom(
+            self._make_image('beacon-dish.png', self.SIZE),
+            180,
+            1
+        )
         self._img_hilite = self._make_image('beacon-hilite.png', self.SIZE)
 
         # setup the bounding rect of the beacon, for mouse interaction
@@ -101,14 +112,13 @@ class Beacon(DisplayObject):
         Returns:
             a PyGame image object
         """
-        raw_img = pygame.image.load(os.path.join('res', filename)).convert_alpha()
+        raw_img = pygame.image.load(utils.make_resource_path(filename)).convert_alpha()
         raw_size = raw_img.get_size()
         scale = size / raw_size[0]
         return pygame.transform.smoothscale(
             raw_img,
             tuple(int(d * scale) for d in raw_size)
         )
-
 
     @property
     def location(self):
@@ -173,7 +183,7 @@ class Beacon(DisplayObject):
 
         # ray drawing
         if self._ray_when != None and self._target_heading != None:
-            a = math.radians(self._target_heading + 90)
+            a = math.radians(self._target_heading - 90)
             cos_a, sin_a = math.cos(a), math.sin(a)
             start_dist = 50
             ray_x0, ray_y0 = x0 + start_dist * cos_a, y0 - start_dist * sin_a
@@ -187,13 +197,14 @@ class Beacon(DisplayObject):
 
             color = tuple(int(c * lum) for c in self._angle_label_color)
             r = pygame.Rect(x0 - 200, y0 - 200, 400, 400)
-            arc_start = min(a, math.radians(90))
-            arc_end = max(a, math.radians(90))
+            arc_start = min(a, math.radians(-90))
+            arc_end = max(a, math.radians(-90))
             pygame.draw.arc(surface, color, r, arc_start, arc_end, 3)
 
-            pygame.draw.line(surface, color, (x0, y0 - 50), (x0, y0 - 300))
+            # angle origin axis
+            pygame.draw.line(surface, color, (x0, y0 + 50), (x0, y0 + 300))
 
-            a = math.radians(self._target_heading / 2. + 90)
+            a = math.radians(self._target_heading / 2. - 90)
             x = x0 + 150. * math.cos(a) - self._angle_label.get_width() / 2
             y = y0 - 150. * math.sin(a) - self._angle_label.get_height() / 2
             surface.blit(self._angle_label, (x, y))
@@ -218,10 +229,11 @@ class Beacon(DisplayObject):
         """ Returns true if the given position (x, y) is inside the bounding rect."""
         return self._rect.collidepoint(pos)
 
+
 class TextWindow(DisplayObject):
     bkgnd_file = None
 
-    def __init__(self, geom):
+    def __init__(self, geom, color=pygame.Color('green')):
         """ Constructor.
 
         Parameters:
@@ -231,15 +243,18 @@ class TextWindow(DisplayObject):
         self._font = pygame.font.SysFont('Courier', 14, bold=False)
         self._lineheight = self._font.get_linesize()
 
-        self._geom = geom
-        self._text_color = pygame.Color('green')
+        self._topleft = utils.Point(geom.topleft)
+        self._childrect = pygame.Rect(0, 0, geom.w, geom.h)
+        self._text_color = color
 
         if self.bkgnd_file:
-            self._bkgnd = pygame.image.load(os.path.join('res', self.bkgnd_file)).convert_alpha()
-            self._bkgnd.set_clip(self._geom)
+            self._bkgnd = pygame.image.load(
+                utils.make_resource_path(self.bkgnd_file)
+            ).convert_alpha()
+            self._bkgnd.set_clip(self._childrect)
         else:
             self._bkgnd = pygame.Surface( #pylint: disable=E1121,E1123
-                self._geom.size,
+                geom.size,
                 flags=pygame.SRCALPHA
             )
             self._bkgnd.fill((40, 40, 40, 220))
@@ -250,13 +265,13 @@ class TextWindow(DisplayObject):
             True,
             self._text_color
         )
-        surface.blit(surf, pos.topleft)
+        surface.blit(surf, dest=pos.xy)
 
     def draw(self, surface):
         surface.blit(
             source=self._bkgnd,
-            dest=self._geom.topleft,
-            area=self._geom
+            dest=self._topleft.xy,
+            area=self._childrect
         )
 
 
@@ -275,56 +290,39 @@ class Hud(TextWindow):
         """
         super(Hud, self).__init__(geom)
 
-        self.fps = 0
         self.alpha = None
         self.beta = None
         self.target_location = None
-        self.controller = None
 
     def draw(self, surface):
         super(Hud, self).draw(surface)
 
-        txt_pos = self._geom.move(10, 10)
+        txt_pos = utils.Point(self._topleft).move(40, 10)
 
+        s_alpha = '%4.1f' % self.alpha if self.alpha != None else '....'
+        s_beta = '%4.1f' % self.beta if self.beta != None else '....'
+        s_x = '%4d' % self.target_location[0] if self.target_location else '....'
+        s_y = '%4d' % self.target_location[1] if self.target_location else '....'
         self._write(
-            'ctrl: %s (%s)' % (self.controller[0], self.controller[2][0]),
+            'alpha : %s / beta : %s / x : %s / y : %s' % (s_alpha, s_beta, s_x, s_y),
             txt_pos,
             surface
         )
-        txt_pos.move_ip(0, self._lineheight)
 
-        self._write(
-            'fps : %d' % self.fps,
-            txt_pos,
-            surface
+
+class StatusLine(TextWindow):
+    def __init__(self, geom):
+        super(StatusLine, self).__init__(geom, color=pygame.Color(127, 127, 127, 255))
+        self.controller = None
+        self.fps = 0
+
+    def draw(self, surface):
+        super(StatusLine, self).draw(surface)
+        txt_pos = utils.Point(self._topleft).move(10, 0)
+        s = '%s (%s) / FPS: %d' % (
+            self.controller[0], self.controller[2][0], self.fps
         )
-        txt_pos.move_ip(0, self._lineheight)
-
-        if self.alpha != None:
-            self._write(
-                'alpha : %2.1f' % self.alpha,
-                txt_pos,
-                surface
-            )
-            txt_pos.move_ip(0, self._lineheight)
-
-        if self.beta != None:
-            self._write(
-                'beta  : %2.1f' % self.beta,
-                txt_pos,
-                surface
-            )
-            txt_pos.move_ip(0, self._lineheight)
-
-        if self.target_location:
-            coords = 'XY'
-            for i, value in enumerate(self.target_location):
-                self._write(
-                    '%s : %2.1f' % (coords[i], value),
-                    txt_pos,
-                    surface
-                )
-                txt_pos.move_ip(0, self._lineheight)
+        self._write(s, txt_pos, surface)
 
 
 class Logo(DisplayObject):
@@ -338,20 +336,23 @@ class Logo(DisplayObject):
                 the size of the display size, for positionning the logo in
                 one of its angles.
         """
-        raw_logo = pygame.image.load('res/pobot-logo.png').convert_alpha()
+        raw_logo = pygame.image.load(
+            utils.make_resource_path('pobot-logo.png')
+        ).convert_alpha()
         raw_size = raw_logo.get_size()
-        scale = 100. / raw_size[0]
+        scale = 120. / raw_size[0]
         self._img = pygame.transform.smoothscale(
             raw_logo,
             tuple(int(d * scale) for d in raw_size)
         )
         self._logo_pos = (
             display_size[0] - self._img.get_size()[0],
-            10
+            display_size[1] - self._img.get_size()[1]
         )
 
     def draw(self, surface):
         surface.blit(self._img, self._logo_pos)
+
 
 class Target(DisplayObject):
     """ Detected target display objet."""
@@ -359,7 +360,9 @@ class Target(DisplayObject):
     FADE_OUT_DELAY = 1.
 
     def __init__(self):
-        raw_img = pygame.image.load('res/cartoon_robot.png').convert_alpha()
+        raw_img = pygame.image.load(
+            utils.make_resource_path('cartoon_robot.png')
+        ).convert_alpha()
         raw_size = raw_img.get_size()
         scale = float(self.WIDTH) / raw_size[0]
         self._img = pygame.transform.smoothscale(
@@ -409,6 +412,7 @@ class Target(DisplayObject):
             surf.set_alpha(alpha)
             surface.blit(surf, origin)
 
+
 class Help(TextWindow):
     text = """
 Beacon GUI help
@@ -436,8 +440,10 @@ Alt-F4 ... exits application
     def draw(self, surface):
         super(Help, self).draw(surface)
 
-        txt_pos = self._geom.move(10, 10)
+        txt_pos = utils.Point(self._topleft)
+        txt_pos.move(10, 10)
+
         for line in self._lines:
             self._write(line, txt_pos, surface)
-            txt_pos.move_ip(0, self._lineheight)
+            txt_pos.move(0, self._lineheight)
 

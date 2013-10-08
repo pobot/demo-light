@@ -1,0 +1,25 @@
+auto lo
+
+iface lo inet loopback
+iface eth0 inet dhcp
+
+allow hotplug wlan0
+
+# Wifi configuration for DCHP client mode
+#auto wlan0
+#iface wlan0 inet dhcp
+# gateway 192.168.1.254
+# wpa-ssid "my-network-ssid"
+# wpa-psk "my-wifi-password"
+# wireless-essid fbx_gv467
+# wireless-key F54AA6DEE9574979946A7A4AF6
+
+# Wifi configuration for AP mode
+iface wlan0 inet static
+ address 192.168.42.1 
+ netmask 255.255.255.0
+
+# turn off WiFi adapter power management
+wireless-power off
+
+#up iptables-restore < /etc/iptables.ipv4.nat

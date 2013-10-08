@@ -23,10 +23,14 @@ import socket
 
 import pygame
 
-import findsvc
+import avahi_utils as avahi
 
-from beacons_gui.guiobjs import Logo, Hud, Beacon, Target, Help
+from beacons_gui.guiobjs import Logo, Hud, StatusLine, Beacon, Target, Help
 from beacons_gui.logging_ import setup_logging
+import beacons_gui.utils as utils
+
+HUD_H = 40
+HUD_W = 500
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     pass
@@ -73,6 +77,8 @@ class BeaconEventListener(threading.Thread):
         self._log = logging.getLogger('listener')
         self._log.setLevel(logging.DEBUG if debug else logging.INFO)
 
+        self._log.info("using %d sensor(s)" % (2 if self._use_2_sensors else 1))
+
     @property
     def terminated(self):
         return self._terminated
@@ -105,7 +111,7 @@ class BeaconEventListener(threading.Thread):
         )
         BeaconEventHandler.owner = self
 
-        self._log.info('listening for events...')
+        self._log.info('listening for controller events...')
         self._tcpsrvr.serve_forever()
         self._log.info('no more listening')
         self._tcpsrvr = None
@@ -161,7 +167,6 @@ class BeaconEventHandler(SocketServer.StreamRequestHandler):
         the server. As a consequence, the handler never exits before.
         """
         self._log.info('client connected : %s' % str(self.client_address))
-        self._log.info('started')
         broken_pipe = False
 
         sensor_mask = 0x03 if self.owner.use_2_sensors else 0x01
@@ -176,7 +181,7 @@ class BeaconEventHandler(SocketServer.StreamRequestHandler):
 
             rxbuff = self.request.recv(4096)
             if not rxbuff:
-                self._log.info('connection closed by client')
+                self._log.info('connection closed by peer')
                 broken_pipe = True
                 break
 
@@ -220,7 +225,7 @@ class BeaconEventHandler(SocketServer.StreamRequestHandler):
                     side = 0 if side == 'L' else 1
                     self.owner.update_beacon_heading(side, float(angle))
 
-        self._log.info('terminated')
+        self._log.info('loop exited')
 
 _SIDES = ('L', 'R')
 
@@ -241,7 +246,9 @@ class Application(object):
         self._window = pygame.display.set_mode(self._wndgeom.size)
         pygame.display.set_caption('Tracking beacons demo - by POBOT')
 
-        wnd_icon = pygame.image.load('res/pobot-logo-right.png').convert_alpha()
+        wnd_icon = pygame.image.load(
+            utils.make_resource_path('pobot-logo-right.png')
+        ).convert_alpha()
         pygame.display.set_icon(wnd_icon)
 
         self._listen_port = args.listen_port
@@ -253,21 +260,26 @@ class Application(object):
         self._ctrl_rfile = None
 
         self._logo = Logo(self._wndgeom.size)
-        self._hud = Hud(pygame.Rect(10, 10, 300, 120))
+        self._hud = Hud(pygame.Rect(
+            (self._wndgeom.w - HUD_W) / 2, 10, HUD_W, HUD_H
+        ))
+        self._status = StatusLine(pygame.Rect(
+            0, self._wndgeom.h - 20, self._wndgeom.w, 20
+        ))
         self._help = None
 
         lg = math.sqrt(self._wndgeom.w * self._wndgeom.w + self._wndgeom.h * self._wndgeom.h)
         self._beacons = (
             Beacon(
-                (Beacon.SIZE / 2, self._wndgeom.h - Beacon.SIZE / 2),
-                (-90, 0),
+                (Beacon.SIZE / 2, Beacon.SIZE / 2),
+                (0, 90),
                 'alpha',
                 ray_length=lg,
                 debug=args.debug
             ),
             Beacon(
-                (self._wndgeom.w - Beacon.SIZE / 2, self._wndgeom.h - Beacon.SIZE / 2),
-                (0, 90),
+                (self._wndgeom.w - Beacon.SIZE / 2, Beacon.SIZE / 2),
+                (-90, 0),
                 'beta',
                 ray_length=lg,
                 debug=args.debug
@@ -305,6 +317,7 @@ class Application(object):
             return
 
         # set up a listener for beacon events
+        self._log.info('starting beacons event listener')
         self._beacon_listener = BeaconEventListener(
             listen_port=self._listen_port,
             use_2_sensors=self._use_2_sensors,
@@ -312,6 +325,7 @@ class Application(object):
         self._beacon_listener.start()
 
         # set up a connection with the beacons controller
+        self._log.info('connecting to beacons controller')
         try:
             self._open_control_socket(self._ctrl_host, self._ctrl_port)
 
@@ -319,15 +333,19 @@ class Application(object):
             self._log.error('cannot connect to beacons controller')
 
         else:
+            self._log.info('retrieving controller identity')
             ghba = socket.gethostbyaddr(self._ctrl_host)
             # use the hostname returned by the controller itself instead of gethostbyaddr()
             # result one, since the later contains what is set in /etc/hosts
-            self._hud.controller = (self._ctrl_name, ghba[1], ghba[2])
+            self._status.controller = (self._ctrl_name, ghba[1], ghba[2])
+            self._log.info('--> %s', self._status.controller)
 
             # hook ourself to the controller as an event listener
+            self._log.info('registering as beacons event listener')
             self._ctl_command('register')
 
             try:
+                self._log.info('starting application main loop')
                 echo_starts = [None, None]
                 scanning = [False, False]
                 while True:
@@ -348,13 +366,19 @@ class Application(object):
                         if echo_side == side:
                             # got an echo start or end for this beacon
                             if echo_start:
-                                echo_starts[side] = echo_heading
+                                # record the very first echo in case we use
+                                # both sensors
+                                if echo_starts[side] == None:
+                                    echo_starts[side] = echo_heading
                             elif echo_starts[side] != None:
                                 beacon.target_heading = (echo_starts[side] + echo_heading) / 2.0
                                 self._log.debug(
-                                    'target heading: %f (%f, %f)' %
-                                    (beacon.target_heading, echo_starts[side], echo_heading)
+                                    'target %s heading: %f (%f, %f)' %
+                                    (_SIDES[side],
+                                     beacon.target_heading, echo_starts[side], echo_heading
+                                     )
                                 )
+                                echo_starts[side] = None
 
                         scanning[side] = self._beacon_listener.get_scan_status(side)
                         if scanning[side]:
@@ -365,7 +389,11 @@ class Application(object):
                             beacon.heading = 0
 
                         # handle mouse interaction with beacons
-                        if beacon.collidepoint(mouse_pos):
+                        # Note: the (0, 0) position exclusion is a trick to
+                        # avoid the left beacon be hilited at start, because
+                        # the mouse has not yet been inside the window, and
+                        # thus the mouse position is reported as (0, 0)
+                        if mouse_pos != (0, 0) and beacon.collidepoint(mouse_pos):
                             beacon.hilited = True
                             mouse_cursor = HAND_CURSOR
                         else:
@@ -376,8 +404,8 @@ class Application(object):
                     pygame.mouse.set_cursor(*mouse_cursor)
 
                     alpha, beta = [beacon.target_heading for beacon in self._beacons]
-                    self._hud.alpha = -alpha if alpha != None else None
-                    self._hud.beta = beta if beta != None else None
+                    self._hud.alpha = alpha if alpha != None else None
+                    self._hud.beta = -beta if beta != None else None
 
                     # if we have two echoes available, we can compute the
                     # target position and display it
@@ -394,14 +422,14 @@ class Application(object):
                         )
                         self._target.visible = True
 
-                        self._hud.target_location = (x, y)
+                        self._hud.target_location = (x, -y)
 
                     else:
                         self._target.visible = False
                         self._hud.target_location = None
 
 
-                    self._hud.fps = int(round(self._clock.get_fps()))
+                    self._status.fps = int(round(self._clock.get_fps()))
 
                     # redraw the display
                     self.display_update()
@@ -503,6 +531,7 @@ class Application(object):
             beacon.draw(self._window)
 
         self._hud.draw(self._window)
+        self._status.draw(self._window)
         self._logo.draw(self._window)
         self._target.draw(self._window)
 
@@ -587,7 +616,7 @@ if __name__ == '__main__':
         '--geom',
         dest='geom',
         type=geometry,
-        default='1024x768+150+100',
+        default='800x1000+150+100',
         help='Display window geometry'
     )
     parser.add_argument(
@@ -610,16 +639,10 @@ if __name__ == '__main__':
         help="beacons controller port"
     )
     parser.add_argument(
-        '--findsvc-port',
-        dest='findsvc_port',
-        default=5555,
-        help='findsvc querying port'
-    )
-    parser.add_argument(
         '-2', '--use-2-sensors',
         dest='use_2_sensors',
         action='store_true',
-        default=False,
+        default=True,
         help='use both sensors of each beacon for target detection'
     )
 
@@ -634,17 +657,35 @@ if __name__ == '__main__':
 
     args.geom = WindowGeometry(args.geom)
 
-    if not args.ctrl_host:
-        reply = findsvc.find_services('demo.pobot:beacons', udp_port=args.findsvc_port)
-        if not reply:
-            print('[ERROR] could not find a beacons controller and none has been ' +
-                  'provided with the command'
-            )
-            sys.exit(1)
+    if args.ctrl_host:
+        if re.match(r'^(\d+\.){3}\d+$', args.ctrl_host):
+            _s = socket.gethostbyaddr(args.ctrl_host)[0]
+            if _s.endswith('.local'):
+                args.ctrl_name = _s[:-6]
+            else:
+                args.ctrl_name = _s
+        else:
+            args.ctrl_name = args.ctrl_host
+            args.ctrl_host = socket.gethostbyname(args.ctrl_name)
 
-        args.ctrl_name, addr, svc_list = reply
-        args.ctrl_host = addr[0]
-        _log.info('using beacons controller %s (%s)', args.ctrl_name, args.ctrl_host)
+    else:
+        try:
+            locations = avahi.find_service('beacons', 'pobot_demo')
+        except avahi.AvahiNotFound:
+            print('[ERROR] no beacon controller provided with command, '
+                    'and Avahi not available on this system for automatic discovery.')
+            sys.exit(1)
+        else:
+            if not locations:
+                print('[ERROR] could not find a beacons controller and none has been ' +
+                    'provided with the command'
+                )
+                sys.exit(1)
+
+            args.ctrl_name, svc_host, svc_port = locations[0]
+            args.ctrl_host = svc_host
+            args.ctrl_port = svc_port
+            _log.info('using beacons controller %s (%s)', args.ctrl_name, args.ctrl_host)
 
     os.environ['SDL_VIDEO_WINDOW_POS'] = '%d,%d' % (args.geom.x, args.geom.y)
     pygame.init()

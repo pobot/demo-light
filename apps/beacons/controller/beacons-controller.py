@@ -31,7 +31,7 @@ import pybot.cli as cli
 import pybot.log as log
 log.NAME_WIDTH = 10
 
-import findsvc
+import avahi_utils
 
 import platform
 if platform.machine().startswith('armv6'):
@@ -77,7 +77,9 @@ class Beacon(object):
                  sensors_input,
                  sensors_enable=None,
                  laser_enable=None,
-                 controller=None
+                 laser_off_delay=30,
+                 controller=None,
+                 auto_off_delay=300
                  ):
         """ Constructor.
 
@@ -99,10 +101,17 @@ class Beacon(object):
             laser_enable:
                 (IO_Specs) IOPi port and IO id of output controlling the
                 activation of the laser
+            laser_off_delay:
+                the delay (in secs) after which the laser is automatically
+                turned off
             controller:
                 instance of the owning beacons controller managing
                 the beacon
+            auto_off_delay:
+                the delay (in secs) after which the beacon is automatically
+                turned off
         """
+        self._log = log.getLogger('beacon-%s' % ident)
         self._ident = ident
 
         self._dmxlintf = dmxlintf
@@ -121,6 +130,10 @@ class Beacon(object):
         self._sensors_ios_shift = min(ios) - 1
         self._last_echos = 0
 
+        # setup the auto-off mechanism
+        self._auto_off_timer = None
+        self._auto_off_delay = auto_off_delay
+
         self._sensors_enable = sensors_enable
         if self._sensors_enable:
             ios = sensors_enable.ios
@@ -130,6 +143,9 @@ class Beacon(object):
         if self._laser_enable:
             io = laser_enable.ios
             self._laser_enable_mask = 1 << (io - 1)
+        self._laser_off_delay = laser_off_delay
+        self._laser_off_timer = None
+        self._laser_state = False
 
         self._scan_thread = None
         self._active = False
@@ -209,11 +225,31 @@ class Beacon(object):
             state:
                 True for laser enabling, False otherwise
         """
-        if not self._laser_enable:
+        if not self._laser_enable or self._laser_state == state:
             return
 
+        self._log.info('setting laser state to %s', state)
         port, _io = self._laser_enable
         self._change_port_bits(port, self._laser_enable_mask, state)
+
+        # if we are turning the laser on, starts the auto off timer
+        # otherwise, cancel pending timer if any
+        if state:
+            self._laser_off_timer = threading.Timer(
+                self._laser_off_delay,
+                self._laser_timer_handler
+            )
+            self._laser_off_timer.start()
+        else:
+            if self._laser_off_timer:
+                self._laser_off_timer.cancel()
+                self._laser_off_timer = None
+
+        self._laser_state = state
+
+    def _laser_timer_handler(self):
+        self._laser_off_timer = None
+        self.enable_laser(False)
 
     @staticmethod
     def _change_port_bits(port, mask, state):
@@ -295,6 +331,20 @@ class Beacon(object):
         )
         self._scan_thread.start()
 
+        self._auto_off_timer = threading.Timer(
+            self._auto_off_delay,
+            self._auto_off_handler
+        )
+        self._auto_off_timer.start()
+
+    def _auto_off_handler(self):
+        self._auto_off_timer = None
+        self.stop()
+        self.point_to(0, sync=True)
+        self.coast()
+        self._controller.send_beacon_heading(self._ident, 0)
+        self._controller.notify_scan(self._ident, False)
+
     def __call__(self, *args, **kwargs):
         """ Makes us a callable, so that we can be passed to the Thread
         constructor.
@@ -309,6 +359,9 @@ class Beacon(object):
         Do nothing if not currently scanning.
         """
         if self._scan_thread:
+            if self._auto_off_timer:
+                self._auto_off_timer.cancel()
+                self._auto_off_timer = None
             self._active = False
             self._scan_thread.join(1)
             self._scan_thread = None
@@ -478,7 +531,7 @@ class BeaconsController(object):
     def __init__(self, run_args):
         self._log = log.getLogger('controller')
 
-        dmxl_intf = dmxl.USB2AX(run_args.port, debug=run_args.debug)
+        dmxl_intf = dmxl.USB2AX(run_args.intf_dev, debug=run_args.debug)
         # check passed servos id
         for _id in (run_args.left_id, run_args.right_id):
             if not dmxl_intf.ping(dmxlid=_id):
@@ -498,32 +551,36 @@ class BeaconsController(object):
         self._beacons = [
             Beacon(
                 ident='L',
-                span=(-80, 0),
+                span=(0, 70),
                 dmxlid=run_args.left_id,
-                dmxlintf=dmxl_intf,
-                sensors_input=IO_Specs(io_port_in, (1, 2)),
-                sensors_enable=IO_Specs(io_port_out, (8, 7)),
-                laser_enable=IO_Specs(io_port_out, 4),
-                controller=self
-            ),
-            Beacon(
-                ident='R',
-                span=(0, 80),
-                dmxlid=run_args.right_id,
                 dmxlintf=dmxl_intf,
                 sensors_input=IO_Specs(io_port_in, (3, 4)),
                 sensors_enable=IO_Specs(io_port_out, (6, 5)),
                 laser_enable=IO_Specs(io_port_out, 3),
+                laser_off_delay=run_args.laser_off_delay,
+                auto_off_delay=run_args.scan_off_delay,
+                controller=self
+            ),
+            Beacon(
+                ident='R',
+                span=(-70, 0),
+                dmxlid=run_args.right_id,
+                dmxlintf=dmxl_intf,
+                sensors_input=IO_Specs(io_port_in, (1, 2)),
+                sensors_enable=IO_Specs(io_port_out, (8, 7)),
+                laser_enable=IO_Specs(io_port_out, 4),
+                laser_off_delay=run_args.laser_off_delay,
+                auto_off_delay=run_args.scan_off_delay,
                 controller=self
             )
         ]
-        # be sure sensors and laser are off until we start scanning
+        # be sure sensors and lasers are off until we start scanning
         for beacon in self._beacons:
             beacon.enable_sensors(False)
             beacon.enable_laser(False)
 
         self._control_server = None
-        self._listen_port = run_args.listen_port
+        self._control_port = run_args.control_port
         self._evtlistener_socket = None
         self._notify_lock = threading.Lock()
 
@@ -578,18 +635,23 @@ class BeaconsController(object):
 
         ControlServer.allow_reuse_address = True
         self._control_server = ControlServer(
-            ('', self._listen_port),
+            ('', self._control_port),
             ControlServerHandler,
             bind_and_activate=False
         )
         self._control_server.owner = self
 
-        self._log.info('start listening for commands on port %s...', self._listen_port)
+        self._log.info('start listening for commands on port %s...', self._control_port)
         self._control_server.server_bind()
         self._control_server.server_activate()
         self._control_server.serve_forever()
 
         self.deactivate_beacons()
+        # be sure sensors and lasers are off before leaving
+        for beacon in self._beacons:
+            beacon.enable_sensors(False)
+            beacon.enable_laser(False)
+
         if self._evtlistener_socket:
             self.evtlistener_unregister()
 
@@ -897,6 +959,11 @@ class ControlServerHandler(SocketServer.StreamRequestHandler):
         Syntax :
             disc
         """
+        # be sure sensors and lasers are off before leaving
+        for side in Side.ALL:
+            ctrl.enable_sensors(side, False, None)
+            ctrl.enable_laser(side, False)
+
         self._ctl_connected = False
 
     def _cmd_simul(self, parms, ctrl):
@@ -922,7 +989,7 @@ class ControlServerHandler(SocketServer.StreamRequestHandler):
         """ Make beacon(s) point to a given direction
 
         Syntax :
-            simul <side>:<angle> [...]
+            hdg <side>:<angle> [...]
         """
         for stmt in parms:
             try:
@@ -982,7 +1049,10 @@ class ControlServerHandler(SocketServer.StreamRequestHandler):
             except AttributeError:
                 raise ValueError('command does not exist : %s' % cmde)
         else:
-            reply = [s[5:] for s in dir(self) if s.startswith('_cmd_')]
+            reply = "Available commands : " + \
+                ', '.join(
+                    (s[5:] for s in dir(self) if s.startswith('_cmd_'))
+                )
         return reply
 
     def handle(self):
@@ -1056,27 +1126,40 @@ def sigterm_handler(signum, frame):
 if __name__ == '__main__':
     parser = cli.get_argument_parser(description='Dual beacons controller')
 
+    parser.add_argument('-i', '--intf_dev',
+                        help='device of the DMXL bus interface',
+                        default='/dev/ttyACM0',
+                        dest='intf_dev'
+                        )
     parser.add_argument('-l', '--left_id',
-                        help='id of left (from rear) beacon servo',
-                        default=1,
+                        help='id of left beacon servo',
+                        default=2,
                         type=_servo_id,
                         dest='left_id'
                         )
     parser.add_argument('-r', '--right_id',
-                        help='id of right (from rear) beacon servo',
-                        default=2,
+                        help='id of right beacon servo',
+                        default=1,
                         type=_servo_id,
                         dest='right_id'
                         )
-    parser.add_argument('-p', '--port',
-                        help='port of the DMXL bus interface',
-                        default='/dev/ttyACM0',
-                        dest='port'
-                        )
-    parser.add_argument('-L', '--listen-port',
-                        help='TCP listening port for commands',
+    parser.add_argument('-c', '--ctrl_port',
+                        help='TCP listening port for control commands',
+                        type=int,
                         default=1234,
-                        dest='listen_port'
+                        dest='control_port'
+                        )
+    parser.add_argument('--scan_off_delay',
+                        help='delay of scan auto off (secs)',
+                        type=int,
+                        default=300,
+                        dest='scan_off_delay'
+                        )
+    parser.add_argument('--laser_off_delay',
+                        help='delay of lasers auto off (secs)',
+                        type=int,
+                        default=30,
+                        dest='laser_off_delay'
                         )
 
     cli_args = parser.parse_args()
@@ -1086,18 +1169,18 @@ if __name__ == '__main__':
     except Exception as e: #pylint: disable=W0703
         cli.die(e)
     else:
-        # Starts the "find service" daemon to be able to reply to clients
-        # looking for a beacon controllers service on the network
-        _findsvc_daemon = findsvc.FindServiceDaemon(
-            services=['demo.pobot:beacons@%d' % cli_args.listen_port],
-            log=log.getLogger('findsvc')
+        # Publish the service with Avahi
+        svc = avahi_utils.AvahiService(
+            svc_name='beacons',
+            svc_type='pobot_demo',
+            svc_port=cli_args.control_port
         )
-        _findsvc_daemon.start()
         try:
             # starts the beacons controller
             signal.signal(signal.SIGTERM, sigterm_handler)
+            svc.publish()
             _ctrl.run()
 
         finally:
-            _findsvc_daemon.shutdown()
+            svc.unpublish()
 

@@ -20,10 +20,9 @@ echos detected by the sensors
 
 PC software and RasPi embedded code communicate over the network.
 
-Note that a simple zeroconf like mechanism is builtin to relieve
-from knowning the IP address of the RasPi, or using a DNS somewhere.
-It is strongly inspired on the SLP protocol 
-(http://en.wikipedia.org/wiki/Service_Location_Protocol).
+The Raspberry Wifi is configured in AP mode, and Avahi is used
+so that the GUI application does not need to know any fixed
+IP address.
 
-See contraption details od POBOT robotics association web site
+See contraption details on POBOT robotics association web site
 (http://www.pobot.org)
