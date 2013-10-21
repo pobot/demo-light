@@ -25,4 +25,4 @@ so that the GUI application does not need to know any fixed
 IP address.
 
 See contraption details on POBOT robotics association web site
-(http://www.pobot.org)
+(http://www.pobot.org/Balises-goniometriques-2013-2eme.html)
