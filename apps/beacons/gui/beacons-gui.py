@@ -23,7 +23,7 @@ import socket
 
 import pygame
 
-import avahi_utils as avahi
+import pybot.avahi_utils as avahi
 
 from beacons_gui.guiobjs import Logo, Hud, StatusLine, Beacon, Target, Help
 from beacons_gui.logging_ import setup_logging
