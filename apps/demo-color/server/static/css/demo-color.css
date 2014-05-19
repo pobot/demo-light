@@ -1,0 +1,34 @@
+.jumbotron {
+    text-align: center;
+}
+
+table {
+    width: 100%;
+}
+
+.navbar {
+    padding: 0 2%;
+}
+
+div.logo {
+    z-index: -10;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    opacity: 0.1;
+    background: url("/img/pobot-logo-bw.png") no-repeat;
+    width: 545px;
+    height: 500px;
+}
+
+.translucent {
+    opacity: 0.9;
+}
+
+label.text-left {
+    text-align: left !important;
+}
+
+div.page-title {
+    font-size: 200%;
+}
