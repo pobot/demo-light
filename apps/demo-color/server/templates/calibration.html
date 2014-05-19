@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block local_css %}
+<style>
+    ul.step-list {
+        list-style-type: none;
+        margin-bottom: 0px;
+    }
+
+    ul.step-list li {
+        min-height: 24px;
+    }
+
+    ul.step-list li span.status {
+        background-image: url("/img/led-green-off.png");
+        background-repeat: no-repeat;
+        background-position: center;
+        min-width: 24px;
+        display: inline-block;
+        margin-right: 10px;
+    }
+
+    ul.step-list li span.done {
+        background-image: url("/img/led-green-on.png");
+    }
+</style>
+{% end %}
+
+{% block local_scripts %}
+<script src="/js/calibration.js" type="text/javascript"></script>
+{% end %}
+
+{% block page_content %}
+
+<div class="well well-lg page-title">
+    Calibrage
+</div>
+
+<div class="row translucent">
+    <div class="col-md-offset-2 col-md-8">
+        <div id="barrier" class="panel panel-default">
+            <div class="panel-heading">
+                Barrière lumineuse
+            </div>
+            <div class="panel-body">
+                <div class="col-md-5">
+                    <p>Retirez tout objet de la barrière, puis cliquez sur le bouton
+                        <strong><span class="text text-success">Calibrer</span></strong></p>
+                </div>
+                <div class="col-md-1">
+                    {% module CalibrationButton() %}
+                </div>
+                <div class="col-md-6">
+                    <ul class="step-list">
+                        {% module CalibrationStep("step-1", "niveau lumière ambiante") %}
+                        {% module CalibrationStep("step-2", "niveau éclairé") %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="bw_detector" class="panel panel-default">
+            <div class="panel-heading">
+                Détecteur noir/blanc
+            </div>
+            <div class="panel-body">
+                <div class="col-md-5">
+                    <p>Placez un objet <strong>blanc</strong> dans le détecteur, puis cliquez sur le bouton
+                        <strong><span class="text text-success">Calibrer</span></strong></p>
+                </div>
+                <div class="col-md-1">
+                    {% module CalibrationButton() %}
+                </div>
+                <div class="col-md-6">
+                    <ul class="step-list">
+                        {% module CalibrationStep("step-1", "niveau lumière ambiante") %}
+                        {% module CalibrationStep("step-2", "niveau éclairé") %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                Détecteur de couleur
+            </div>
+            <div id="white_balance" class="panel-body">
+                <h4>Balance des blancs</h4>
+
+                <div class="col-md-5">
+                    <p>Placez un objet <strong>blanc</strong> sous le détecteur de couleur, puis cliquez sur le bouton
+                        <strong><span class="text text-success">Calibrer</span></strong></p>
+                </div>
+                <div class="col-md-1">
+                    {% module CalibrationButton() %}
+                </div>
+                <div class="col-md-6">
+                    <ul class="step-list">
+                        {% module CalibrationStep("step-1", "niveau rouge") %}
+                        {% module CalibrationStep("step-2", "niveau vert") %}
+                        {% module CalibrationStep("step-3", "niveau bleu") %}
+                    </ul>
+                </div>
+            </div>
+            <div id="black_levels" class="panel-body">
+                <h4>Niveaux du noir</h4>
+
+                <div class="col-md-5">
+                    <p>Placez un objet <strong>noir</strong> sous le détecteur de couleur, puis cliquez sur le bouton
+                        <strong><span class="text text-success">Calibrer</span></strong></p>
+                </div>
+                <div class="col-md-1">
+                    {% module CalibrationButton() %}
+                </div>
+                <div class="col-md-6">
+                    <ul class="step-list">
+                        {% module CalibrationStep("step-1", "niveau rouge") %}
+                        {% module CalibrationStep("step-2", "niveau vert") %}
+                        {% module CalibrationStep("step-3", "niveau bleu") %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% end %}
