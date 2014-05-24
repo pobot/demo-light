@@ -9,7 +9,8 @@ import time
 import tornado
 
 BARRIER_LDR_INPUT_ID = 1
-WBDETECTOR_LDR_INPUT_ID = 2
+BW_DETECTOR_LDR_INPUT_ID = 2
+
 
 class WSHOptoFenceGetSample(tornado.web.RequestHandler):
     def get(self, input_id):
@@ -35,6 +36,12 @@ class WSHOptoFenceActivateLight(tornado.web.RequestHandler):
     def post(self):
         status = self.get_argument("status") == '1'
         self.application.activate_barrier_light(status);
+
+
+class WSHReflexActivateLight(tornado.web.RequestHandler):
+    def post(self):
+        status = self.get_argument("status") == '1'
+        self.application.activate_reflex_light(status);
 
 
 class WSHCalibrationBarrier(tornado.web.RequestHandler):
