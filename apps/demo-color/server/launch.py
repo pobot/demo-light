@@ -6,10 +6,14 @@
 
 __author__ = 'Eric Pascual (for POBOT)'
 
+import logging
+import os
+import json
 
 from webapp import DemoColorApp
+from controller import DemonstratorController
 
-import logging
+_CONFIG_FILE_NAME = "demo-color.cfg"
 
 if __name__ == '__main__':
     import argparse
@@ -35,7 +39,7 @@ if __name__ == '__main__':
         parser.add_argument(
             '-S', '--simul',
             help='simulates hardware',
-            dest='simul',
+            dest='simulated_hw',
             action='store_true')
         parser.add_argument(
             '-p', '--port',
@@ -72,14 +76,31 @@ if __name__ == '__main__':
         if cli_args.debug:
             log.warn('debug mode activated')
 
-        # build the Web app settings dictionary from the CLI args
+
+        runtime_settings = None
+        if os.getuid() == 0:
+            cfg_file_path = os.path.join('/etc/', _CONFIG_FILE_NAME)
+        else:
+            cfg_file_path = os.path.expanduser('~/.' + _CONFIG_FILE_NAME)
+        if os.path.exists(cfg_file_path):
+            runtime_settings = json.load(file(cfg_file_path, 'rt'))
+
+        # updates the app settings dictionary from the CLI args
         cli_settings = dict([
             (k, getattr(cli_args, k)) for k in dir(cli_args) if not k.startswith('_')
         ])
-
         log.info("command line arguments : %s", cli_settings)
 
-        app = DemoColorApp(cli_settings)
+        if runtime_settings:
+            runtime_settings.update(cli_settings)
+        else:
+            runtime_settings = cli_settings
+
+        log.info("runtime settings : %s", runtime_settings)
+
+        ctrl = DemonstratorController(runtime_settings)
+
+        app = DemoColorApp(ctrl, runtime_settings)
         app.start()
 
     except Exception as e:

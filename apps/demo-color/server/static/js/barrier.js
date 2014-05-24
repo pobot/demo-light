@@ -8,7 +8,7 @@ $(document).ready(function() {
     var measure_display = $("#measure-display");
     var measure = $("#current");
 
-    function activate_light_source(status) {
+    function set_light_source(status) {
         $.ajax({
             url: document.location.href + "/light",
             data: {
@@ -38,7 +38,7 @@ $(document).ready(function() {
             sampler = null;
             $("button.exp-control").toggleClass('disabled');
 
-            activate_light_source(false);
+            set_light_source(false);
         }
     }
 
@@ -72,7 +72,7 @@ $(document).ready(function() {
     function activate_sampler(detection_active) {
         if (!sampler) {
             if (detection_active) {
-                activate_light_source(true);
+                set_light_source(true);
             }
             sampler = setInterval(function() {
                 get_sample(detection_active);
@@ -82,11 +82,11 @@ $(document).ready(function() {
     }
 
     $("button#bulb-on").click(function(){
-        activate_light_source(true);
+        set_light_source(true);
     });
 
     $("button#bulb-off").click(function(){
-        activate_light_source(false);
+        set_light_source(false);
     });
 
     $("button#sampling-on").click(function(){

@@ -1,102 +1,135 @@
 $(document).ready(function() {
     'use strict';
 
+    function notify(msg) {
+        jNotify(
+            msg,
+            {
+                ShowTimeEffect: 200,
+                TimeShown: 1000,
+                HideTimeEffect: 200,
+                ShowOverlay: false
+            }
+        );
+    }
+
+    function success(msg) {
+        jSuccess(
+            msg,
+            {
+                TimeShown: 1000,
+                ShowOverlay: false
+            }
+        );
+    }
+
+    function error(msg) {
+        jError(
+            msg,
+            {
+                TimeShown: 1500,
+                ShowOverlay: false
+            }
+        );
+    }
+
     function calibrate_barrier() {
-        jNotify("Calibrage barrière lumineuse démarré.");
+        var current_ambient, current_lightened;
+
+        notify("Calibrage barrière lumineuse démarré.");
         $("div#barrier li span.status").removeClass("done");
 
         $.ajax({
             url: document.location.href + "/barrier/0",
             dataType: "json",
-            async: false,
             success: function(result) {
-                $("div#barrier li#step-1 span#value").text(result.voltage.toFixed(3));
+                current_ambient = result.current;
+                $("div#barrier li#step-1 span#value").text(current_ambient.toFixed(3));
                 $("div#barrier li#step-1 span#level").removeClass("invisible");
                 $("div#barrier li#step-1 span.status").addClass("done");
+
+                $.ajax({
+                    url: document.location.href + "/barrier/1",
+                    dataType: "json",
+                    success: function(result) {
+                        current_lightened = result.current;
+                        $("div#barrier li#step-2 span#value").text(current_lightened.toFixed(3));
+                        $("div#barrier li#step-2 span#level").removeClass("invisible");
+                        $("div#barrier li#step-2 span.status").addClass("done");
+
+                        $.ajax({
+                            url: document.location.href + "/barrier",
+                            method: "POST",
+                            data: {"ambient" : current_ambient, "lightened" : current_lightened},
+                            success: function(result) {
+                                success("Calibrage terminé.");
+                            },
+                            error: function(jqXHR, textStatus, errorThrown) {
+                                error("Erreur traitement : <br>" + errorThrown);
+                            }
+                        });
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        error("Erreur traitement : <br>" + errorThrown);
+                    }
+                });
+
             },
             error: function(jqXHR, textStatus, errorThrown) {
-                jError(
-                    "Erreur traitement : <br>" + errorThrown,
-                    {
-                        HideTimeEffect: 500
-                    }
-                );
-            }
-        });
-
-        $.ajax({
-            url: document.location.href + "/barrier/1",
-            dataType: "json",
-            async: false,
-            success: function(result) {
-                $("div#barrier li#step-2 span#value").text(result.voltage.toFixed(3));
-                $("div#barrier li#step-2 span#level").removeClass("invisible");
-                $("div#barrier li#step-2 span.status").addClass("done");
-
-                jSuccess("Calibrage barrière lumineuse terminé.");
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                jError(
-                    "Erreur traitement : <br>" + errorThrown,
-                    {
-                        HideTimeEffect: 500
-                    }
-                );
+                error("Erreur traitement : <br>" + errorThrown);
             }
         });
     }
 
-    function calibrate_bw_detector() {
-        jNotify("Calibrage détecteur blanc/noir démarré.");
-        $("div#bw_detector li span.status").removeClass("done");
+    var current_white = 0, current_black = 0;
+
+    function calibrate_bw_detector(color) {
+        var div = "div#bw_" + color + " ";
+
+        notify("Calibrage détecteur noir/blanc démarré.");
+        $(div +"li span.status").removeClass("done");
 
         $.ajax({
-            url: document.location.href + "/bw_detector/0",
+            url: document.location.href + "/bw_detector/sample",
             dataType: "json",
-            async: false,
             success: function(result) {
-                $("div#bw_detector li#step-1 span#value").text(result.voltage.toFixed(3));
-                $("div#bw_detector li#step-1 span#level").removeClass("invisible");
-                $("div#bw_detector li#step-1 span.status").addClass("done");
+                var current = result.current;
+                $(div + "li#step-1 span#value").text(current.toFixed(3));
+                $(div + "li#step-1 span#level").removeClass("invisible");
+                $(div + "li#step-1 span.status").addClass("done");
+
+                if (color === 'w') {
+                    current_white = current;
+                } else {
+                    current_black = current;
+                }
+
+                if (current_black !== 0 && current_white !== 0) {
+                    $.ajax({
+                        url: document.location.href + "/bw_detector",
+                        method: "POST",
+                        data: {"w" : current_white, "b" : current_black},
+                        success: function(result) {
+                            success("Calibrage terminé.");
+                        },
+                        error: function(jqXHR, textStatus, errorThrown) {
+                            error("Erreur traitement : <br>" + errorThrown);
+                        }
+                    });
+                }
             },
             error: function(jqXHR, textStatus, errorThrown) {
-                jError(
-                    "Erreur traitement : <br>" + errorThrown,
-                    {
-                        HideTimeEffect: 500
-                    }
-                );
-            }
-        });
-
-        $.ajax({
-            url: document.location.href + "/bw_detector/1",
-            dataType: "json",
-            async: false,
-            success: function(result) {
-                $("div#bw_detector li#step-2 span#value").text(result.voltage.toFixed(3));
-                $("div#bw_detector li#step-2 span#level").removeClass("invisible");
-                $("div#bw_detector li#step-2 span.status").addClass("done");
-
-                jSuccess("Calibrage détecteur blanc/noir terminé.");
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                jError(
-                    "Erreur traitement : <br>" + errorThrown,
-                    {
-                        HideTimeEffect: 500
-                    }
-                );
+                error("Erreur traitement : <br>" + errorThrown);
             }
         });
     }
 
     function calibrate_white_balance() {
-        jNotify("Balance des blancs démarrée.");
+        notify("Balance des blancs démarrée.");
     }
 
     function calibrate_black_levels() {
-        jNotify("Calibrage des niveaux de noir démarré.");
+        notify("Calibrage des niveaux de noir démarré.");
     }
 
     $("div#barrier button#go").click(function(){
@@ -105,9 +138,15 @@ $(document).ready(function() {
         $(this).toggleClass('disabled');
     });
 
-    $("div#bw_detector button#go").click(function(){
+    $("div#bw_w button#go").click(function(){
         $(this).toggleClass('disabled');
-        calibrate_bw_detector();
+        calibrate_bw_detector('w');
+        $(this).toggleClass('disabled');
+    });
+
+    $("div#bw_b button#go").click(function(){
+        $(this).toggleClass('disabled');
+        calibrate_bw_detector('b');
         $(this).toggleClass('disabled');
     });
 

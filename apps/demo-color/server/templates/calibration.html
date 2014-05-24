@@ -52,7 +52,7 @@
                 </div>
                 <div class="col-md-6">
                     <ul class="step-list">
-                        {% module CalibrationStep("step-1", "niveau lumière ambiante") %}
+                        {% module CalibrationStep("step-1", "niveau ambiant") %}
                         {% module CalibrationStep("step-2", "niveau éclairé") %}
                     </ul>
                 </div>
@@ -62,7 +62,7 @@
             <div class="panel-heading">
                 Détecteur noir/blanc
             </div>
-            <div class="panel-body">
+            <div id="bw_w" class="panel-body">
                 <div class="col-md-5">
                     <p>Placez un objet <strong>blanc</strong> dans le détecteur, puis cliquez sur le bouton
                         <strong><span class="text text-success">Calibrer</span></strong></p>
@@ -72,8 +72,21 @@
                 </div>
                 <div class="col-md-6">
                     <ul class="step-list">
-                        {% module CalibrationStep("step-1", "niveau lumière ambiante") %}
-                        {% module CalibrationStep("step-2", "niveau éclairé") %}
+                        {% module CalibrationStep("step-1", "niveau blanc") %}
+                    </ul>
+                </div>
+            </div>
+            <div id="bw_b" class="panel-body">
+                <div class="col-md-5">
+                    <p>Placez un objet <strong>noir</strong> dans le détecteur, puis cliquez sur le bouton
+                        <strong><span class="text text-success">Calibrer</span></strong></p>
+                </div>
+                <div class="col-md-1">
+                    {% module CalibrationButton() %}
+                </div>
+                <div class="col-md-6">
+                    <ul class="step-list">
+                        {% module CalibrationStep("step-1", "niveau noir") %}
                     </ul>
                 </div>
             </div>
@@ -83,8 +96,6 @@
                 Détecteur de couleur
             </div>
             <div id="white_balance" class="panel-body">
-                <h4>Balance des blancs</h4>
-
                 <div class="col-md-5">
                     <p>Placez un objet <strong>blanc</strong> sous le détecteur de couleur, puis cliquez sur le bouton
                         <strong><span class="text text-success">Calibrer</span></strong></p>
@@ -101,8 +112,6 @@
                 </div>
             </div>
             <div id="black_levels" class="panel-body">
-                <h4>Niveaux du noir</h4>
-
                 <div class="col-md-5">
                     <p>Placez un objet <strong>noir</strong> sous le détecteur de couleur, puis cliquez sur le bouton
                         <strong><span class="text text-success">Calibrer</span></strong></p>

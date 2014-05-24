@@ -8,77 +8,81 @@ import time
 
 import tornado
 
+from controller import DemonstratorController
+
 BARRIER_LDR_INPUT_ID = 1
 BW_DETECTOR_LDR_INPUT_ID = 2
 
 
-class WSHOptoFenceGetSample(tornado.web.RequestHandler):
-    def get(self, input_id):
-        input_id = int(input_id)
-        if input_id not in (1, 2, 3):
-            self.set_status(status_code=400, reason="invalid input id: %d" % input_id)
-            self.finish()
-            return
-
+class WSHBarrierGetSample(tornado.web.RequestHandler):
+    def get(self):
         try:
-            voltage = self.application.read_voltage(input_id)
+            current_mA, detection = self.application.controller.analyze_barrier_input()
         except IOError as e:
-            self.set_status(status_code=404, reason="IOError (input_id=%d)" % input_id)
+            self.set_status(status_code=404, reason="IOError")
             self.finish()
         else:
             self.finish(json.dumps({
-                "current": voltage / self.application.shunt(input_id) * 1000,
-                "detection": voltage < self.application.threshold(input_id)
+                "current": current_mA,
+                "detection": detection
             }))
 
 
-class WSHOptoFenceActivateLight(tornado.web.RequestHandler):
+class WSHBarrierActivateLight(tornado.web.RequestHandler):
     def post(self):
         status = self.get_argument("status") == '1'
-        self.application.activate_barrier_light(status);
+        self.application.controller.set_barrier_light(status);
 
 
 class WSHReflexActivateLight(tornado.web.RequestHandler):
     def post(self):
         status = self.get_argument("status") == '1'
-        self.application.activate_reflex_light(status);
+        self.application.controller.set_reflex_light(status);
 
 
 class WSHCalibrationBarrier(tornado.web.RequestHandler):
     def get(self, level):
         level = int(level)
-        self.application.set_barrier_light(level == 1);
-        time.sleep(0.5)
+        self.application.controller.set_barrier_light(level == DemonstratorController.LIGHTENED);
+        time.sleep(1)
         try:
-            voltage = self.application.get_barrier_input()
+            current_mA, _ = self.application.controller.analyze_barrier_input()
         except IOError as e:
             self.set_status(status_code=404, reason="IOError (barrier)")
             self.finish()
         else:
-            self.application.set_barrier_level_voltage(level, voltage)
             self.finish(json.dumps({
-                "voltage": voltage
+                "current": current_mA
             }))
         finally:
             if level:
-                self.application.set_barrier_light(False)
+                self.application.controller.set_barrier_light(False)
+
+    def post(self):
+        self.application.controller.set_barrier_reference_levels(
+            float(self.get_argument('ambient')),
+            float(self.get_argument('lightened'))
+        )
 
 
 class WSHCalibrationBWDetector(tornado.web.RequestHandler):
-    def get(self, level):
-        level = int(level)
-        self.application.set_bw_detector_light(level == 1);
-        time.sleep(0.5)
+    def get(self):
+        self.application.controller.set_bw_detector_light(True);
+        time.sleep(1)
         try:
-            voltage = self.application.get_bw_detector_input()
+            current_mA, _ = self.application.controller.analyze_bw_detector_input()
         except IOError as e:
             self.set_status(status_code=404, reason="IOError (bw_detector)")
             self.finish()
         else:
-            self.application.set_bw_detector_level_voltage(level, voltage)
             self.finish(json.dumps({
-                "voltage": voltage
+                "current": current_mA
             }))
         finally:
-            if level:
-                self.application.set_bw_detector_light(False)
+            self.application.controller.set_bw_detector_light(False)
+
+    def post(self):
+        self.application.controller.set_bw_detector_reference_levels(
+            float(self.get_argument('b')),
+            float(self.get_argument('w'))
+        )
