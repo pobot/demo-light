@@ -6,16 +6,19 @@ __author__ = 'Eric Pascual'
 import json
 import time
 
-import tornado
-
-from controller import DemonstratorController
+from tornado.web import RequestHandler
 
 BARRIER_LDR_INPUT_ID = 1
 BW_DETECTOR_LDR_INPUT_ID = 2
 
 
-class WSHBarrierGetSample(tornado.web.RequestHandler):
+class WSBarrierSample(RequestHandler):
     def get(self):
+        light = self.get_argument('light', None)
+        if light in (0, 1):
+            self.application.controller.set_barrier_light(light == 1)
+            time.sleep(1)
+
         try:
             current_mA, detection = self.application.controller.analyze_barrier_input()
         except IOError as e:
@@ -28,36 +31,13 @@ class WSHBarrierGetSample(tornado.web.RequestHandler):
             }))
 
 
-class WSHBarrierActivateLight(tornado.web.RequestHandler):
+class WSBarrierLight(RequestHandler):
     def post(self):
         status = self.get_argument("status") == '1'
         self.application.controller.set_barrier_light(status);
 
 
-class WSHReflexActivateLight(tornado.web.RequestHandler):
-    def post(self):
-        status = self.get_argument("status") == '1'
-        self.application.controller.set_reflex_light(status);
-
-
-class WSHCalibrationBarrier(tornado.web.RequestHandler):
-    def get(self, level):
-        level = int(level)
-        self.application.controller.set_barrier_light(level == DemonstratorController.LIGHTENED);
-        time.sleep(1)
-        try:
-            current_mA, _ = self.application.controller.analyze_barrier_input()
-        except IOError as e:
-            self.set_status(status_code=404, reason="IOError (barrier)")
-            self.finish()
-        else:
-            self.finish(json.dumps({
-                "current": current_mA
-            }))
-        finally:
-            if level:
-                self.application.controller.set_barrier_light(False)
-
+class WSBarrierCalibration(RequestHandler):
     def post(self):
         self.application.controller.set_barrier_reference_levels(
             float(self.get_argument('ambient')),
@@ -65,22 +45,32 @@ class WSHCalibrationBarrier(tornado.web.RequestHandler):
         )
 
 
-class WSHCalibrationBWDetector(tornado.web.RequestHandler):
+class WSBWDetectorSample(RequestHandler):
     def get(self):
-        self.application.controller.set_bw_detector_light(True);
-        time.sleep(1)
+        light = self.get_argument('light', None)
+        if light in (0, 1):
+            self.application.controller.set_barrier_light(light == 1)
+            time.sleep(1)
+
         try:
-            current_mA, _ = self.application.controller.analyze_bw_detector_input()
+            current_mA, color = self.application.controller.analyze_bw_detector_input()
         except IOError as e:
             self.set_status(status_code=404, reason="IOError (bw_detector)")
             self.finish()
         else:
             self.finish(json.dumps({
-                "current": current_mA
+                "current": current_mA,
+                "color": "white" if color else "black"
             }))
-        finally:
-            self.application.controller.set_bw_detector_light(False)
 
+
+class WSBWDetectorLight(RequestHandler):
+    def post(self):
+        status = self.get_argument("status") == '1'
+        self.application.controller.set_bw_detector_light(status);
+
+
+class WSBWDetectorCalibration(RequestHandler):
     def post(self):
         self.application.controller.set_bw_detector_reference_levels(
             float(self.get_argument('b')),

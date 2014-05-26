@@ -1,0 +1,8 @@
+Package: pobot-demo-color
+Version: 1.0
+Section: base
+Priority: optional
+Architecture: all
+Depends: python (>= 2.7), python (<< 3.0)
+Maintainer: Eric Pascual <eric@pobot.org>
+Description: A Web application for managing the POBOT Junior Cup competition event.

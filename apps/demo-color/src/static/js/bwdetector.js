@@ -31,10 +31,11 @@ $(document).ready(function() {
 
     function stop_sampling() {
         if (sampler) {
-            $(".animated").fadeOut();
-            measure_display.addClass("invisible");
             clearInterval(sampler);
             sampler = null;
+
+            img_ball.attr("src", "/img/ball-none.png");
+            measure_display.addClass("invisible");
             $("button.exp-control").toggleClass('disabled');
 
             set_light_source(false);
@@ -49,11 +50,7 @@ $(document).ready(function() {
                 measure.text(data.current.toFixed(3));
                 measure_display.removeClass("invisible");
                 if (detection_active) {
-                    if (data.detection) {
-                        img_ball.fadeIn(300);
-                    } else {
-                        img_ball.fadeOut(300);
-                    }
+                    img_ball.attr("src", "/img/ball-" + data.color + ".png");
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {

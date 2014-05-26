@@ -14,56 +14,7 @@ import logging
 
 import uimodules
 import wsapi
-
-
-class WSHUIHandler(tornado.web.RequestHandler):
-    def get_template_args(self):
-        return {
-            'app_title':"Capteurs de lumière et de couleur"
-        }
-
-    def get(self, *args, **kwargs):
-        """ By default, the get method displays the "Not yet implemented message".
-        """
-        self.render(
-            os.path.join(self.application.template_home, "nyi.html"),
-            **self.get_template_args()
-        )
-
-
-class WSHHome(WSHUIHandler):
-    def get(self, *args, **kwargs):
-        self.render(
-            os.path.join(self.application.template_home, "home.html"),
-            **self.get_template_args()
-        )
-
-
-class WSHWhiteBlackDetection(WSHUIHandler):
-    pass
-
-
-class WSHColorDetection(WSHUIHandler):
-    pass
-
-
-class WSHCalibration(WSHUIHandler):
-    def get(self, *args, **kwargs):
-        self.render(
-            os.path.join(self.application.template_home, "calibration.html"),
-            **self.get_template_args()
-        )
-
-
-class WSHBarrier(WSHUIHandler):
-    def get(self, *args, **kwargs):
-        template_args = self.get_template_args()
-        template_args['demo_title'] = "Barrière optique"
-
-        self.render(
-            os.path.join(self.application.template_home, "barrier.html"),
-            **template_args
-        )
+import webui
 
 
 _here = os.path.dirname(__file__)
@@ -86,20 +37,23 @@ class DemoColorApp(tornado.web.Application):
         (r"/js/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'js')}),
         (r"/img/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'img')}),
 
-        (r"/", WSHHome),
+        # user interface
 
-        (r"/settings/calibration", WSHCalibration),
-        (r"/settings/calibration/barrier", wsapi.WSHCalibrationBarrier),
-        (r"/settings/calibration/barrier/(?P<level>[0-1])", wsapi.WSHCalibrationBarrier),
+        (r"/", webui.UIHome),
+        (r"/barrier", webui.UIHBarrier),
+        (r"/bw_detector", webui.UIWBDetector),
+        (r"/color_detector", webui.UIColorDetector),
+        (r"/calibration", webui.UICalibration),
 
-        (r"/settings/calibration/bw_detector", wsapi.WSHCalibrationBWDetector),
-        (r"/settings/calibration/bw_detector/sample", wsapi.WSHCalibrationBWDetector),
+        # API wWeb services
 
-        (r"/demo/barrier", WSHBarrier),
-        (r"/demo/barrier/sample", wsapi.WSHBarrierGetSample),
-        (r"/demo/barrier/light", wsapi.WSHBarrierActivateLight),
-        (r"/demo/wb_detection", WSHWhiteBlackDetection),
-        (r"/demo/color_detection", WSHColorDetection),
+        (r"/barrier/sample", wsapi.WSBarrierSample),
+        (r"/barrier/light", wsapi.WSBarrierLight),
+        (r"/barrier/calibrate", wsapi.WSBarrierCalibration),
+
+        (r"/bw_detector/sample", wsapi.WSBWDetectorSample),
+        (r"/bw_detector/light", wsapi.WSBWDetectorLight),
+        (r"/bw_detector/calibrate", wsapi.WSBWDetectorCalibration),
     ]
 
     def __init__(self, controller, runtime_settings):
@@ -142,4 +96,5 @@ class DemoColorApp(tornado.web.Application):
 
         finally:
             self._controller.shutdown()
+
 

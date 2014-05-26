@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ "$INSTALL_DEPS" == "1" ] ; then
+    pip install tornado
+fi
+
+SVC_NAME="pobot-color-demo"
+
+update-rc.d $SVC_NAME defaults
+
+if [ "$NO_START" != "1" ] ; then
+    service $SVC_NAME start
+fi

@@ -47,7 +47,7 @@ class DemonstratorController(object):
         'adc_bw_detector': 2,
         'gpio_bw_detector': 13,
         'shunts': [10000] * 3,
-        'thresholds': [4.2] * 3
+        'thresholds': [0.42] * 3
     }
 
     def __init__(self, runtime_settings):

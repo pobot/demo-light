@@ -1,0 +1,5 @@
+#!/bin/bash
+
+service pobot-color-demo stop
+# avoid uninstall failure if service already stopped
+exit 0
