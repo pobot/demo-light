@@ -36,7 +36,6 @@ update_build_tree:
 		--include "*/" \
 		--include "*.py" \
 		--include "*.html" \
-		--include "*.html" \
 		--include "*.js" \
 		--include "*.css" \
 		--include "*.png" \
