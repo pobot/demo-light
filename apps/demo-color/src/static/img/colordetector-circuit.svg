@@ -9,9 +9,9 @@
     <tspan x="520" y="36">LDR</tspan>
   </text>
   <g>
-    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="468,72 476,84 468,84 473.716,92.5736 "/>
-    <polygon style="fill: #000000" points="475.38,95.0697 471.497,92.8509 473.716,92.5736 474.825,90.6321 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="475.38,95.0697 471.497,92.8509 473.716,92.5736 474.825,90.6321 "/>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #ff0000" points="462,72 470,84 462,84 467.716,92.5736 "/>
+    <polygon style="fill: #ff0000" points="469.38,95.0697 465.497,92.8509 467.716,92.5736 468.825,90.6321 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #ff0000" points="469.38,95.0697 465.497,92.8509 467.716,92.5736 468.825,90.6321 "/>
   </g>
   <g>
     <g>
@@ -36,12 +36,12 @@
     <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="545" y1="54" x2="560" y2="54"/>
   </g>
   <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="496" y1="-48.0218" x2="521" y2="-48.0218"/>
-    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="521" y1="-59.4843" x2="521" y2="-36.5593"/>
-    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="531" y1="-70.9468" x2="531" y2="-25.0968"/>
-    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="536" y1="-59.4843" x2="546" y2="-59.4843"/>
-    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="541" y1="-53.7531" x2="541" y2="-65.2156"/>
-    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="531" y1="-48.0218" x2="556" y2="-48.0218"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="496" y1="-55.5769" x2="521" y2="-55.5769"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="521" y1="-65.3654" x2="521" y2="-45.7885"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="531" y1="-75.1538" x2="531" y2="-36.0001"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="536" y1="-65.3654" x2="546" y2="-65.3654"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="541" y1="-60.4712" x2="541" y2="-70.2596"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="531" y1="-55.5769" x2="556" y2="-55.5769"/>
   </g>
   <g>
     <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="470" y1="-20" x2="470" y2="-8"/>
@@ -68,12 +68,33 @@
   <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #00ff00" points="440,-48 470,-48 470,-20 "/>
   <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #00ff00" x1="470.041" y1="37.7588" x2="470" y2="20"/>
   <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #00ff00" x1="440" y1="52" x2="457.116" y2="52.044"/>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #00ff00" points="496,-55.5768 492,-55.5768 492,54 500,54 "/>
+  <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #00ff00" points="556,-55.5768 568,-55.5768 568,54 560,54 "/>
   <g>
-    <ellipse style="fill: #ffffff" cx="470.074" cy="52.044" rx="12.9576" ry="13.2814"/>
+    <ellipse style="fill: #00ff00" cx="470" cy="60" rx="6" ry="6"/>
+    <ellipse style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #00ff00" cx="470" cy="60" rx="6" ry="6"/>
+  </g>
+  <g>
+    <ellipse style="fill: #0000ff" cx="478" cy="52" rx="6" ry="6"/>
+    <ellipse style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #0000ff" cx="478" cy="52" rx="6" ry="6"/>
+  </g>
+  <g>
+    <ellipse style="fill: #ff0000" cx="462.25" cy="52" rx="6" ry="6"/>
+    <ellipse style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #ff0000" cx="462.25" cy="52" rx="6" ry="6"/>
+  </g>
+  <g>
     <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="470.074" cy="52.044" rx="12.9576" ry="13.2814"/>
     <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="460.744" y1="42.4814" x2="479.403" y2="61.6066"/>
     <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="460.744" y1="61.6066" x2="479.403" y2="42.4814"/>
   </g>
-  <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #00ff00" points="496,-48.0218 492,-48.0218 492,54 500,54 "/>
-  <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #00ff00" points="556,-48.0218 568,-48.0218 568,54 560,54 "/>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #00ff00" points="470,72 478,84 470,84 475.716,92.5736 "/>
+    <polygon style="fill: #00ff00" points="477.38,95.0697 473.497,92.8509 475.716,92.5736 476.825,90.6321 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #00ff00" points="477.38,95.0697 473.497,92.8509 475.716,92.5736 476.825,90.6321 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #0000ff" points="478,72 486,84 478,84 483.716,92.5736 "/>
+    <polygon style="fill: #0000ff" points="485.38,95.0697 481.497,92.8509 483.716,92.5736 484.825,90.6321 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #0000ff" points="485.38,95.0697 481.497,92.8509 483.716,92.5736 484.825,90.6321 "/>
+  </g>
 </svg>

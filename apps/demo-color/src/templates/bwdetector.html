@@ -37,33 +37,31 @@
 <table id="experiment" class="translucent">
     <tr>
         <td rowspan="4"><img src="/img/bwdetector-circuit.svg"></td>
-        <td colspan="2"><img id="ball" src="/img/ball-none.png"/></td>
-    </tr>
-    <tr>
-        <td style="width:250px">
-            <img id="bulb" src="/img/bulb-off.png"/>
-        </td>
-        <td><img id="ldr" src="/img/ldr-rotated.png"/><br>LDR</td>
-    </tr>
-    <tr>
-        <td style="width:250px">
-            <div class="btn-group-horizontal">
-                <button id="bulb-on" class="btn btn-success bulb-control">ON</button>
-                <button id="bulb-off" class="btn btn-danger bulb-control disabled">OFF</button>
-            </div>
-        </td>
-        <td>
-            <div id="measure-display" class="well well-sm invisible text-center text-info">
-                I = <span id="current">-</span> mA
-            </div>
-        </td>
-    </tr>
-    <tr>
         <td colspan="2" class="experiment-controls">
             <button id="sampling-on" class="btn btn-success exp-control">Mesure</button>
             <button id="detection-on" class="btn btn-success exp-control">Détection</button>
             <button id="experiment-end" class="btn btn-danger exp-control disabled">Arrêt</button>
         </td>
+    </tr>
+    <tr>
+        <td style="width:250px" rowspan="2">
+            <div class="btn-group-vertical">
+                <button id="bulb-on" class="btn btn-success bulb-control">ON</button>
+                <button id="bulb-off" class="btn btn-danger bulb-control disabled">OFF</button>
+            </div>
+            <img id="bulb"/>
+        </td>
+        <td>
+            <div id="measure-display" class="well well-sm text-center text-info">
+                I = <span id="current">0.000</span> mA
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td><img id="ldr" src="/img/ldr-flipped.png"/><br>LDR</td>
+    </tr>
+    <tr>
+        <td colspan="2"><img id="ball" src="/img/ball-none.png"/></td>
     </tr>
 </table>
 

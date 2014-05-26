@@ -1,0 +1,87 @@
+{% extends "demo.html" %}
+
+{% block local_css %}
+<style>
+    table#experiment {
+        width: auto;
+        margin: auto;
+    }
+
+    table#experiment td, table#experiment th {
+        padding: 10px;
+    }
+
+    table#experiment td {
+        text-align: center;
+        width: 200px;
+    }
+
+    td.experiment-controls button {
+        width: 100px;
+    }
+
+    .measure-display {
+        font-size: 150%;
+        font-weight: bold;
+        margin-bottom: 0px;
+    }
+
+</style>
+{% end %}
+
+{% block local_scripts %}
+<script src="/js/colordetector.js" type="text/javascript"></script>
+{% end %}
+
+{% block demo_content %}
+<table id="experiment" class="translucent">
+    <tr>
+        <td rowspan="4"><img src="/img/colordetector-circuit.svg"></td>
+        <td colspan="2" class="experiment-controls">
+            <button id="sampling-on" class="btn btn-success exp-control">Mesure</button>
+            <button id="detection-on" class="btn btn-success exp-control">Détection</button>
+            <button id="experiment-end" class="btn btn-danger exp-control disabled">Arrêt</button>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:250px" rowspan="2">
+            <div class="btn-group-vertical">
+                <button id="bulb-red" class="btn btn-danger bulb-control">Rouge</button>
+                <button id="bulb-green" class="btn btn-success bulb-control">Vert</button>
+                <button id="bulb-blue" class="btn btn-info bulb-control">Bleu</button>
+                <button id="bulb-off" class="btn btn-primary bulb-control disabled">OFF</button>
+            </div>
+            <img id="bulb"/>
+        </td>
+        <td>
+            <div style="position:relative; height:7em;">
+                <div id="measure-display"
+                     class="well well-sm text-center text-info measure-display"
+                     style="position:absolute; top:0; left:0;">
+                    I = <span id="current">0.000</span> mA
+                </div>
+                <div id="measure-rgb-display"
+                     class="well well-sm text-center text-info invisible measure-display"
+                     style="position:absolute; top:0; left:0;">
+                    <div id="red" style="color:red;">
+                        Ir = <span id="current">0.000</span> mA
+                    </div>
+                    <div id="green"style="color:green;">
+                        Iv = <span id="current">0.000</span> mA
+                    </div>
+                    <div id="blue"style="color:blue;">
+                        Ib = <span id="current">0.000</span> mA
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td><img id="ldr" src="/img/ldr-flipped.png"/><br>LDR</td>
+    </tr>
+    <tr>
+        <td colspan="2"><img id="ball" src="/img/ball-none.png"/></td>
+    </tr>
+</table>
+
+{% end %}

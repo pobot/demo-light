@@ -21,6 +21,9 @@ class BlinkM(object):
         self._log = logging.getLogger('BlinkM')
         self._log.info('created with bus=%d addr=0x%.2x', bus, addr)
 
+    def go_to(self, r, g, b):
+        self._log.info('color changed to R=%d G=%d B=%d', r, g, b)
+
     def reset(self):
         self._log.info('reset')
 

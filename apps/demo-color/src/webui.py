@@ -52,7 +52,14 @@ class UIWBDetector(UIHandler):
 
 
 class UIColorDetector(UIHandler):
-    pass
+    def get(self, *args, **kwargs):
+        template_args = self.get_template_args()
+        template_args['demo_title'] = "Détecteur couleur"
+
+        self.render(
+            os.path.join(self.application.template_home, "colordetector.html"),
+            **template_args
+        )
 
 
 class UICalibration(UIHandler):

@@ -36,6 +36,7 @@ class DemoColorApp(tornado.web.Application):
         (r"/css/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'css')}),
         (r"/js/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'js')}),
         (r"/img/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'img')}),
+        (r"/favicon\.ico", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'img')}),
 
         # user interface
 
@@ -54,6 +55,10 @@ class DemoColorApp(tornado.web.Application):
         (r"/bw_detector/sample", wsapi.WSBWDetectorSample),
         (r"/bw_detector/light", wsapi.WSBWDetectorLight),
         (r"/bw_detector/calibrate", wsapi.WSBWDetectorCalibration),
+
+        (r"/color_detector/sample", wsapi.WSColorDetectorSample),
+        (r"/color_detector/light", wsapi.WSColorDetectorLight),
+        (r"/color_detector/calibrate", wsapi.WSColorDetectorCalibration),
     ]
 
     def __init__(self, controller, runtime_settings):

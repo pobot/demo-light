@@ -76,3 +76,39 @@ class WSBWDetectorCalibration(RequestHandler):
             float(self.get_argument('b')),
             float(self.get_argument('w'))
         )
+
+
+class WSColorDetectorSample(RequestHandler):
+    COLORS = ('none', 'red', 'green', "blue")
+
+    def get(self):
+        light = self.get_argument('light', None)
+        if light in (1, 2, 3):
+            self.application.controller.set_color_light(light)
+            time.sleep(1)
+
+        try:
+            current_mA, color = self.application.controller.analyze_color_detector_input()
+        except IOError as e:
+            self.set_status(status_code=404, reason="IOError (color_detector)")
+            self.finish()
+        else:
+            self.finish(json.dumps({
+                "current": current_mA,
+                "color": self.COLORS[color]
+            }))
+
+
+class WSColorDetectorLight(RequestHandler):
+    def post(self):
+        color = int(self.get_argument("color"))
+        self.application.controller.set_color_detector_light(color);
+
+
+class WSColorDetectorCalibration(RequestHandler):
+    def post(self):
+        self.application.controller.set_color_detector_reference_levels(
+            float(self.get_argument('r')),
+            float(self.get_argument('g')),
+            float(self.get_argument('b'))
+        )

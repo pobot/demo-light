@@ -35,6 +35,10 @@ class DemonstratorController(object):
     BLACK = 0
     WHITE = 1
 
+    RED = 1
+    GREEN = 2
+    BLUE = 3
+
     settings = {
         'debug': False,
         'simulated_hw': False,
@@ -49,6 +53,13 @@ class DemonstratorController(object):
         'shunts': [10000] * 3,
         'thresholds': [0.42] * 3
     }
+
+    COLOR_COMPONENTS = (
+        (0, 0, 0),
+        (255, 0, 0),
+        (0, 255, 0),
+        (0, 0, 255)
+    )
 
     def __init__(self, runtime_settings):
         # override default settings with runtime provided ones
@@ -136,6 +147,16 @@ class DemonstratorController(object):
     def set_bw_detector_reference_levels(self, level_ambient, level_lightened):
         self._bw_detector_reference_levels = [level_ambient, level_lightened]
         self._thresholds[self.LDR_BW] = (level_ambient + level_lightened) / 2
+
+    def set_color_detector_light(self, color):
+        self._blinkm.go_to(*(self.COLOR_COMPONENTS[color]))
+
+    def analyze_color_detector_input(self):
+        v = self.adc.readVoltage(self._adc_bw_detector)
+        i_mA = v / self._shunts[self.LDR_BW] * 1000.
+        #TODO
+        color = self.RED
+        return i_mA, color
 
     def set_white_reference_levels(self, component, levels):
         self._white_reference_levels = levels[:]

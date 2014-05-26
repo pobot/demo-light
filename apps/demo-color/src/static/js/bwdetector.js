@@ -4,8 +4,15 @@ $(document).ready(function() {
     var img_bulb = $("img#bulb");
     var sampler = null;
     var img_ball = $("img#ball");
-    var measure_display = $("#measure-display");
     var measure = $("#current");
+
+    function update_meter(value) {
+        measure.text(value.toFixed(3));
+    }
+
+    function update_bulb(status) {
+        img_bulb.attr("src", "/img/bulb-south-" + (status ? "on" : "off") + ".png");
+    }
 
     function set_light_source(status) {
         $.ajax({
@@ -15,7 +22,7 @@ $(document).ready(function() {
             },
             method: "POST",
             success: function() {
-                img_bulb.attr("src", "/img/bulb-" + (status ? "on" : "off") + ".png");
+                update_bulb(status);
                 $("button.bulb-control").toggleClass("disabled");
             },
             error: function(jqXHR, textStatus, errorThrown) {
@@ -35,7 +42,7 @@ $(document).ready(function() {
             sampler = null;
 
             img_ball.attr("src", "/img/ball-none.png");
-            measure_display.addClass("invisible");
+            update_meter(0);
             $("button.exp-control").toggleClass('disabled');
 
             set_light_source(false);
@@ -47,8 +54,7 @@ $(document).ready(function() {
             url: document.location.href + "/sample",
             dataType: "json",
             success: function(data) {
-                measure.text(data.current.toFixed(3));
-                measure_display.removeClass("invisible");
+                update_meter(data.current);
                 if (detection_active) {
                     img_ball.attr("src", "/img/ball-" + data.color + ".png");
                 }
@@ -96,4 +102,7 @@ $(document).ready(function() {
     $("button#experiment-end").click(stop_sampling);
 
     $(window).unload(stop_sampling);
+
+    update_meter(0);
+    update_bulb(false);
 });
