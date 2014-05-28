@@ -53,13 +53,15 @@ class DemoColorApp(tornado.web.Application):
         (r"/calibration/barrier/store", wsapi.WSBarrierCalibrationStore),
 
         (r"/bw_detector/sample", wsapi.WSBWDetectorSample),
-        (r"/bw_detector/light", wsapi.WSBWDetectorLight),
+        (r"/bw_detector/light/(?P<state>[01])", wsapi.WSBWDetectorLight),
         (r"/calibration/bw_detector/sample", wsapi.WSBWDetectorCalibrationSample),
         (r"/calibration/bw_detector/store", wsapi.WSBWDetectorCalibrationStore),
 
         (r"/color_detector/sample", wsapi.WSColorDetectorSample),
-        (r"/color_detector/light", wsapi.WSColorDetectorLight),
-        (r"/calibration/color_detector/sample/(?P<color>[rgb])", wsapi.WSColorDetectorSample),
+        (r"/color_detector/light/(?P<color>[0rgb])", wsapi.WSColorDetectorLight),
+        (r"/color_detector/analyze", wsapi.WSColorDetectorAnalyze),
+        (r"/color_detector/status", wsapi.WSColorDetectorCalibrationStatus),
+        (r"/calibration/color_detector/sample", wsapi.WSColorDetectorSample),
         (r"/calibration/color_detector/store/(?P<color>[wb])", wsapi.WSColorDetectorCalibrationStore),
     ]
 

@@ -133,51 +133,56 @@ $(document).ready(function() {
         $(div + "li span.status").removeClass("done");
         $(div + "span#level").addClass("invisible");
 
-        $.getJSON(document.location.href + "/color_detector/sample/r").then(
-            function(result) {
-                current_r = result.current;
-                var div_step = div + "li#step-1 ";
+        $.getJSON(
+            document.location.href + "/color_detector/sample",
+            {"color" : "r"}
 
-                $(div_step + "span#value").text(result.current.toFixed(3));
-                $(div_step + "span#level").removeClass("invisible");
-                $(div_step + "span.status").addClass("done");
+        ).then(function(result) {
+            current_r = result.current;
+            var div_step = div + "li#step-1 ";
 
-                return $.getJSON(document.location.href + "/color_detector/sample/g");
-            }
-        ).then(
-            function(result) {
-                var div_step = div + "li#step-2 ";
+            $(div_step + "span#value").text(result.current.toFixed(3));
+            $(div_step + "span#level").removeClass("invisible");
+            $(div_step + "span.status").addClass("done");
 
-                current_g = result.current;
-                $(div_step + "span#value").text(result.current.toFixed(3));
-                $(div_step + "span#level").removeClass("invisible");
-                $(div_step + "span.status").addClass("done");
+            return $.getJSON(
+                document.location.href + "/color_detector/sample",
+                {"color" : "g"}
+            );
 
-                return $.getJSON(document.location.href + "/color_detector/sample/b");
-            }
-        ).then(
-            function(result) {
-                var div_step = div + "li#step-3 ";
+        }).then(function(result) {
+            var div_step = div + "li#step-2 ";
 
-                current_b = result.current;
-                $(div_step + "span#value").text(result.current.toFixed(3));
-                $(div_step + "span#level").removeClass("invisible");
-                $(div_step + "span.status").addClass("done");
+            current_g = result.current;
+            $(div_step + "span#value").text(result.current.toFixed(3));
+            $(div_step + "span#level").removeClass("invisible");
+            $(div_step + "span.status").addClass("done");
 
-                return $.post(
-                    document.location.href + "/color_detector/store/" + w_or_b,
-                    {"r" : current_r, "g" : current_g, "b" : current_b}
-                );
-            }
-        ).done(
-            function() {
-                success("Calibrage terminé.");
-            }
-        ).fail(
-            function(jqXHR, textStatus, errorThrown) {
-                error("Erreur traitement : <br>" + errorThrown);
-            }
-        ).always(
+            return $.getJSON(
+                document.location.href + "/color_detector/sample",
+                {"color" : "b"}
+            );
+
+        }).then(function(result) {
+            var div_step = div + "li#step-3 ";
+
+            current_b = result.current;
+            $(div_step + "span#value").text(result.current.toFixed(3));
+            $(div_step + "span#level").removeClass("invisible");
+            $(div_step + "span.status").addClass("done");
+
+            return $.post(
+                document.location.href + "/color_detector/store/" + w_or_b,
+                {"r" : current_r, "g" : current_g, "b" : current_b}
+            );
+
+        }).done(function() {
+            success("Calibrage terminé.");
+
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            error("Erreur traitement : <br>" + errorThrown);
+
+        }).always(
             calibration_ended
         );
     }

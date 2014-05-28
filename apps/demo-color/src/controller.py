@@ -32,12 +32,24 @@ class DemonstratorController(object):
     AMBIENT = 0
     LIGHTENED = 1
 
-    BLACK = 0
-    WHITE = 1
+    BW_BLACK = 0
+    BW_WHITE = 1
 
-    RED = 1
-    GREEN = 2
-    BLUE = 3
+    COLOR_UNDEF = 0
+    COLOR_RED = 1
+    COLOR_GREEN = 2
+    COLOR_BLUE = 3
+    COLOR_BLACK = 4
+    COLOR_WHITE = 5
+
+    COLOR_NAMES = (
+        'undef',
+        'red',
+        'green',
+        'blue',
+        'black',
+        'white'
+    )
 
     settings = {
         'debug': False,
@@ -50,11 +62,13 @@ class DemonstratorController(object):
         'gpio_barrier': 12,
         'adc_bw_detector': 2,
         'gpio_bw_detector': 13,
+        'adc_color_detector': 3,
         'shunts': [10000] * 3,
         'thresholds': [0.42] * 3
     }
 
     COLOR_COMPONENTS = (
+        # RGB
         (0, 0, 0),
         (255, 0, 0),
         (0, 255, 0),
@@ -84,6 +98,8 @@ class DemonstratorController(object):
 
         GPIO.setup(self._gpio_bw_detector, GPIO.OUT)
 
+        self._adc_color_detector = self.settings['adc_color_detector']
+
         self._port = self.settings['port']
 
         self._shunts = self.settings['shunts']
@@ -91,12 +107,17 @@ class DemonstratorController(object):
 
         # barrier sensor input levels for ambient and lightened states
         self._barrier_reference_levels = [0, 0]
+
         # B/W sensor input levels for ambient and lightened states
         self._bw_detector_reference_levels = [0, 0]
-        # color sensor input levels for white sensing
-        self._white_reference_levels = {'R': 0, 'G': 0, 'B': 0}
-        # color sensor input levels for black sensing
-        self._black_reference_levels = {'R': 0, 'G': 0, 'B': 0}
+
+        # color sensor reference levels
+        self._color_detector_reference_levels = {
+            # white RGB
+            'w': (0, 0, 0),
+            # black RGB
+            'b': (0, 0, 0)
+        }
 
     @property
     def blinkm(self):
@@ -141,7 +162,7 @@ class DemonstratorController(object):
     def analyze_bw_detector_input(self):
         v = self.adc.readVoltage(self._adc_bw_detector)
         i_mA = v / self._shunts[self.LDR_BW] * 1000.
-        color = self.BLACK if i_mA < self._thresholds[self.LDR_BW] else self.WHITE
+        color = self.BW_BLACK if i_mA < self._thresholds[self.LDR_BW] else self.BW_WHITE
         return i_mA, color
 
     def set_bw_detector_reference_levels(self, level_ambient, level_lightened):
@@ -151,17 +172,48 @@ class DemonstratorController(object):
     def set_color_detector_light(self, color):
         self._blinkm.go_to(*(self.COLOR_COMPONENTS[color]))
 
-    def analyze_color_detector_input(self):
-        v = self.adc.readVoltage(self._adc_bw_detector)
-        i_mA = v / self._shunts[self.LDR_BW] * 1000.
-        #TODO
-        color = self.RED
-        return i_mA, color
+    def sample_color_detector_input(self):
+        v = self.adc.readVoltage(self._adc_color_detector)
+        i_mA = v / self._shunts[self.LDR_COLOR] * 1000.
+        return i_mA
 
-    def set_color_detector_reference_levels(self, wb, levels):
-        if wb == 'w':
-            self._white_reference_levels = levels[:]
-        elif wb == 'b':
-            self._black_reference_levels = levels[:]
+    def set_color_detector_reference_levels(self, white_or_black, levels):
+        if white_or_black in self._color_detector_reference_levels:
+            self._color_detector_reference_levels[white_or_black] = levels[:]
         else:
-            raise ValueError("invalid white/black option (%s)" % wb)
+            raise ValueError("invalid white/black option (%s)" % white_or_black)
+
+    def color_detector_calibrated(self):
+        return all(any(c > 0 for c in refs) for refs in self._color_detector_reference_levels.itervalues())
+
+
+    def analyze_color(self, rgb_sample):
+        # normalize color components in [0, 1] and in the white-black range
+        rgb_sample = [float(s) for s in rgb_sample]
+        comps = [max((s - b) / (w - b), 0)
+                 for w, b, s in zip(
+                self._color_detector_reference_levels['w'],
+                self._color_detector_reference_levels['b'],
+                rgb_sample
+            )]
+
+        sum_comps = sum(comps)
+        if sum_comps > 0:
+            decomp = [c / sum_comps for c in comps]
+        else:
+            decomp = [0] * 3
+
+        min_comps, max_comps = min(comps), max(comps)
+
+        if min_comps > 0.9:
+            color = self.COLOR_WHITE
+        elif max_comps < 0.2:
+            color = self.COLOR_BLACK
+        else:
+            over_50 = [c > 0.5 for c in decomp]
+            if any(over_50):
+                color = over_50.index(True) + 1
+            else:
+                color = self.COLOR_UNDEF
+
+        return color, decomp

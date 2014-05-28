@@ -35,7 +35,7 @@ class WSBarrierSample(RequestHandler, Logged):
 
 
 class WSBarrierLight(RequestHandler, Logged):
-    def post(self):
+    def post(self, state):
         status = self.get_argument("status") == '1'
         self.application.controller.set_barrier_light(status);
 
@@ -75,9 +75,8 @@ class WSBWDetectorSample(RequestHandler, Logged):
 
 
 class WSBWDetectorLight(RequestHandler, Logged):
-    def post(self):
-        status = self.get_argument("status") == '1'
-        self.application.controller.set_bw_detector_light(status);
+    def post(self, state):
+        self.application.controller.set_bw_detector_light(state == '1');
 
 
 class WSBWDetectorCalibrationSample(WSBWDetectorSample):
@@ -96,33 +95,37 @@ class WSBWDetectorCalibrationStore(RequestHandler, Logged):
 
 
 class WSColorDetectorSample(RequestHandler, Logged):
-    COLORS = ('none', 'red', 'green', "blue")
-    REQ_PARM_TO_COLOR = {
-        'r': DemonstratorController.RED,
-        'g': DemonstratorController.GREEN,
-        'b': DemonstratorController.BLUE
-    }
-
-    def get(self, color):
-        self.application.controller.set_color_detector_light(self.REQ_PARM_TO_COLOR[color])
-        time.sleep(2)
+    def get(self):
+        color = self.get_argument('color', None)
+        if color in '0rgb':
+            self.application.controller.set_color_detector_light('0rgb'.index(color))
+            time.sleep(1)
 
         try:
-            current_mA, color = self.application.controller.analyze_color_detector_input()
+            current_mA = self.application.controller.sample_color_detector_input()
         except IOError as e:
-            self.set_status(status_code=404, reason="IOError (color detector sensor)")
+            self.set_status(status_code=404, reason="IOError (color_detector)")
             self.finish()
         else:
             self.finish(json.dumps({
-                "current": current_mA,
-                "color": self.COLORS[color]
+                "current": current_mA
             }))
 
 
+class WSColorDetectorAnalyze(RequestHandler):
+    def get(self):
+        sample = [self.get_argument(comp) for comp in ('r', 'g', 'b')]
+        color, decomp = self.application.controller.analyze_color(sample)
+        self.finish(json.dumps({
+            "color": DemonstratorController.COLOR_NAMES[color],
+            "decomp": [d * 100 for d in decomp]
+        }))
+
+
 class WSColorDetectorLight(RequestHandler, Logged):
-    def post(self):
-        color = int(self.get_argument("color"))
-        self.application.controller.set_color_detector_light(color);
+    def post(self, color):
+        self.application.controller.set_color_detector_light('0rgb'.index(color));
+
 
 
 class WSColorDetectorCalibrationStore(RequestHandler, Logged):
@@ -133,3 +136,10 @@ class WSColorDetectorCalibrationStore(RequestHandler, Logged):
         r, g, b = (float(self.get_argument(a)) for a in ('r', 'g', 'b'))
         self.logger.info("storing references : R=%f G=%f B=%f", r, g, b)
         self.application.controller.set_color_detector_reference_levels(color, (r, g, b))
+
+
+class WSColorDetectorCalibrationStatus(RequestHandler, Logged):
+    def get(self):
+        self.finish(json.dumps({
+            "calibrated": 1 if self.application.controller.color_detector_calibrated() else 0
+        }))

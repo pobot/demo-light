@@ -26,6 +26,23 @@
         margin-bottom: 0px;
     }
 
+    div#decomp-red {
+        background-color: red;
+    }
+
+    div#decomp-green {
+        background-color: green;
+    }
+
+    div#decomp-blue {
+        background-color: blue;
+    }
+
+    div.progress-bar {
+        color: #ffffff;
+        text-align: center;
+    }
+
 </style>
 {% end %}
 
@@ -80,7 +97,20 @@
         <td><img id="ldr" src="/img/ldr-flipped.png"/><br>LDR</td>
     </tr>
     <tr>
-        <td colspan="2"><img id="ball" src="/img/ball-none.png"/></td>
+        <td><img id="ball" src="/img/ball-none.png"/></td>
+        <td>
+            <div id="color-decomp-bargraphs" class="invisible">
+                <div class="progress">
+                    <div id="decomp-red" class="progress-bar" style="width:0%"></div>
+                </div>
+                <div class="progress">
+                    <div id="decomp-green" class="progress-bar" style="width:0%"></div>
+                </div>
+                <div class="progress">
+                    <div id="decomp-blue" class="progress-bar" style="width:0%"></div>
+                </div>
+            </div>
+        </td>
     </tr>
 </table>
 
