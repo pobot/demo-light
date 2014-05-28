@@ -158,8 +158,10 @@ class DemonstratorController(object):
         color = self.RED
         return i_mA, color
 
-    def set_white_reference_levels(self, component, levels):
-        self._white_reference_levels = levels[:]
-
-    def set_black_reference_levels(self, component, levels):
-        self._black_reference_levels = levels[:]
+    def set_color_detector_reference_levels(self, wb, levels):
+        if wb == 'w':
+            self._white_reference_levels = levels[:]
+        elif wb == 'b':
+            self._black_reference_levels = levels[:]
+        else:
+            raise ValueError("invalid white/black option (%s)" % wb)

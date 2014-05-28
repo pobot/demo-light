@@ -36,7 +36,6 @@ class DemoColorApp(tornado.web.Application):
         (r"/css/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'css')}),
         (r"/js/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'js')}),
         (r"/img/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'img')}),
-        (r"/favicon\.ico", tornado.web.StaticFileHandler, {"path": os.path.join(_res_home, 'img')}),
 
         # user interface
 
@@ -50,15 +49,18 @@ class DemoColorApp(tornado.web.Application):
 
         (r"/barrier/sample", wsapi.WSBarrierSample),
         (r"/barrier/light", wsapi.WSBarrierLight),
-        (r"/barrier/calibrate", wsapi.WSBarrierCalibration),
+        (r"/calibration/barrier/step/(?P<step>[01])", wsapi.WSBarrierCalibrationStep),
+        (r"/calibration/barrier/store", wsapi.WSBarrierCalibrationStore),
 
         (r"/bw_detector/sample", wsapi.WSBWDetectorSample),
         (r"/bw_detector/light", wsapi.WSBWDetectorLight),
-        (r"/bw_detector/calibrate", wsapi.WSBWDetectorCalibration),
+        (r"/calibration/bw_detector/sample", wsapi.WSBWDetectorCalibrationSample),
+        (r"/calibration/bw_detector/store", wsapi.WSBWDetectorCalibrationStore),
 
         (r"/color_detector/sample", wsapi.WSColorDetectorSample),
         (r"/color_detector/light", wsapi.WSColorDetectorLight),
-        (r"/color_detector/calibrate", wsapi.WSColorDetectorCalibration),
+        (r"/calibration/color_detector/sample/(?P<color>[rgb])", wsapi.WSColorDetectorSample),
+        (r"/calibration/color_detector/store/(?P<color>[wb])", wsapi.WSColorDetectorCalibrationStore),
     ]
 
     def __init__(self, controller, runtime_settings):

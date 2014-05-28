@@ -1,84 +1,82 @@
 $(document).ready(function() {
     'use strict';
 
+    function running(state) {
+        if (state) {
+            $("div#running").removeClass("invisible");
+        } else {
+            $("div#running").addClass("invisible");
+        }
+    }
+
+    function calibration_started(msg) {
+        $("button#go").addClass('disabled');
+        jNotify(msg, {ShowOverlay: false});
+        running(true);
+    }
+
+    function calibration_ended() {
+        running(false);
+        $("button#go").removeClass('disabled');
+    }
+
     function notify(msg) {
-        jNotify(
-            msg,
-            {
-                ShowTimeEffect: 200,
-                TimeShown: 1000,
-                HideTimeEffect: 200,
-                ShowOverlay: false
-            }
-        );
+        jNotify(msg, {ShowOverlay: true});
     }
 
     function success(msg) {
-        jSuccess(
-            msg,
-            {
-                TimeShown: 1000,
-                ShowOverlay: false
-            }
-        );
+        jSuccess(msg, {ShowOverlay: false});
     }
 
     function error(msg) {
-        jError(
-            msg,
-            {
-                TimeShown: 1500,
-                ShowOverlay: false
-            }
-        );
+        jError(msg, {ShowOverlay: false});
     }
 
     function calibrate_barrier() {
         var current_ambient, current_lightened;
+        var div = "div#barrier ";
 
-        notify("Calibrage barrière lumineuse démarré.");
-        $("div#barrier li span.status").removeClass("done");
+        calibration_started("Calibrage barrière lumineuse démarré.");
 
-        $.ajax({
-            url: document.location.href + "/barrier/0",
-            dataType: "json",
-            success: function(result) {
+        $(div + "li span.status").removeClass("done");
+        $(div + "span#level").addClass("invisible");
+
+        $.getJSON(document.location.href + "/barrier/step/0").then(
+            function(result){
                 current_ambient = result.current;
-                $("div#barrier li#step-1 span#value").text(current_ambient.toFixed(3));
-                $("div#barrier li#step-1 span#level").removeClass("invisible");
-                $("div#barrier li#step-1 span.status").addClass("done");
+                var div_step = div + "li#step-1 ";
 
-                $.ajax({
-                    url: document.location.href + "/barrier/1",
-                    dataType: "json",
-                    success: function(result) {
-                        current_lightened = result.current;
-                        $("div#barrier li#step-2 span#value").text(current_lightened.toFixed(3));
-                        $("div#barrier li#step-2 span#level").removeClass("invisible");
-                        $("div#barrier li#step-2 span.status").addClass("done");
+                $(div_step + "span#value").text(current_ambient.toFixed(3));
+                $(div_step + "span#level").removeClass("invisible");
+                $(div_step + "span.status").addClass("done");
 
-                        $.ajax({
-                            url: document.location.href + "/barrier",
-                            method: "POST",
-                            data: {"ambient" : current_ambient, "lightened" : current_lightened},
-                            success: function(result) {
-                                success("Calibrage terminé.");
-                            },
-                            error: function(jqXHR, textStatus, errorThrown) {
-                                error("Erreur traitement : <br>" + errorThrown);
-                            }
-                        });
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        error("Erreur traitement : <br>" + errorThrown);
-                    }
-                });
+                return $.getJSON(document.location.href + "/barrier/step/1");
+            }
+        ).then(
+            function(result) {
+                var div_step = div + "li#step-2 ";
 
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
+                current_lightened = result.current;
+                $(div_step + "span#value").text(current_lightened.toFixed(3));
+                $(div_step + "span#level").removeClass("invisible");
+                $(div_step + "span.status").addClass("done");
+
+                return $.post(
+                    document.location.href + "/barrier/store",
+                    {"ambient" : current_ambient, "lightened" : current_lightened}
+                )
+            }
+        ).done(
+            function(result) {
+                success("Calibrage terminé.");
+            }
+        ).fail(
+            function(jqXHR, textStatus, errorThrown) {
                 error("Erreur traitement : <br>" + errorThrown);
             }
-        });
+        ).always(
+            calibration_ended
+        );
     }
 
     var current_white = 0, current_black = 0;
@@ -86,17 +84,19 @@ $(document).ready(function() {
     function calibrate_bw_detector(color) {
         var div = "div#bw_" + color + " ";
 
-        notify("Calibrage détecteur noir/blanc démarré.");
-        $(div +"li span.status").removeClass("done");
+        calibration_started("Calibrage détecteur noir/blanc démarré.");
 
-        $.ajax({
-            url: document.location.href + "/bw_detector/sample",
-            dataType: "json",
-            success: function(result) {
+        $(div +"li span.status").removeClass("done");
+        $(div + "li#step-1 span#level").addClass("invisible");
+
+        $.getJSON(document.location.href + "/bw_detector/sample").then(
+            function(result){
                 var current = result.current;
-                $(div + "li#step-1 span#value").text(current.toFixed(3));
-                $(div + "li#step-1 span#level").removeClass("invisible");
-                $(div + "li#step-1 span.status").addClass("done");
+                var div_step = div + "li#step-1 ";
+
+                $(div_step + "span#value").text(current.toFixed(3));
+                $(div_step + "span#level").removeClass("invisible");
+                $(div_step + "span.status").addClass("done");
 
                 if (color === 'w') {
                     current_white = current;
@@ -105,61 +105,101 @@ $(document).ready(function() {
                 }
 
                 if (current_black !== 0 && current_white !== 0) {
-                    $.ajax({
-                        url: document.location.href + "/bw_detector",
-                        method: "POST",
-                        data: {"w" : current_white, "b" : current_black},
-                        success: function(result) {
-                            success("Calibrage terminé.");
-                        },
-                        error: function(jqXHR, textStatus, errorThrown) {
-                            error("Erreur traitement : <br>" + errorThrown);
-                        }
-                    });
+                    return $.post(
+                        document.location.href + "/bw_detector/store",
+                        {"w" : current_white, "b" : current_black}
+                    );
                 }
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
+            }
+        ).done(
+            function() {
+                success("Calibrage terminé.");
+            }
+        ).fail(
+            function(jqXHR, textStatus, errorThrown) {
                 error("Erreur traitement : <br>" + errorThrown);
             }
-        });
+        ).always(
+            calibration_ended
+        );
     }
 
-    function calibrate_white_balance() {
-        notify("Balance des blancs démarrée.");
-    }
+    function calibrate_color_detector(w_or_b) {
+        var current_r, current_g, current_b;
+        var div = "div#" + (w_or_b == 'w' ? "white_balance" : "black_levels") + " ";
 
-    function calibrate_black_levels() {
-        notify("Calibrage des niveaux de noir démarré.");
+        calibration_started("Balance des blancs démarrée.");
+
+        $(div + "li span.status").removeClass("done");
+        $(div + "span#level").addClass("invisible");
+
+        $.getJSON(document.location.href + "/color_detector/sample/r").then(
+            function(result) {
+                current_r = result.current;
+                var div_step = div + "li#step-1 ";
+
+                $(div_step + "span#value").text(result.current.toFixed(3));
+                $(div_step + "span#level").removeClass("invisible");
+                $(div_step + "span.status").addClass("done");
+
+                return $.getJSON(document.location.href + "/color_detector/sample/g");
+            }
+        ).then(
+            function(result) {
+                var div_step = div + "li#step-2 ";
+
+                current_g = result.current;
+                $(div_step + "span#value").text(result.current.toFixed(3));
+                $(div_step + "span#level").removeClass("invisible");
+                $(div_step + "span.status").addClass("done");
+
+                return $.getJSON(document.location.href + "/color_detector/sample/b");
+            }
+        ).then(
+            function(result) {
+                var div_step = div + "li#step-3 ";
+
+                current_b = result.current;
+                $(div_step + "span#value").text(result.current.toFixed(3));
+                $(div_step + "span#level").removeClass("invisible");
+                $(div_step + "span.status").addClass("done");
+
+                return $.post(
+                    document.location.href + "/color_detector/store/" + w_or_b,
+                    {"r" : current_r, "g" : current_g, "b" : current_b}
+                );
+            }
+        ).done(
+            function() {
+                success("Calibrage terminé.");
+            }
+        ).fail(
+            function(jqXHR, textStatus, errorThrown) {
+                error("Erreur traitement : <br>" + errorThrown);
+            }
+        ).always(
+            calibration_ended
+        );
     }
 
     $("div#barrier button#go").click(function(){
-        $(this).toggleClass('disabled');
         calibrate_barrier();
-        $(this).toggleClass('disabled');
     });
 
     $("div#bw_w button#go").click(function(){
-        $(this).toggleClass('disabled');
         calibrate_bw_detector('w');
-        $(this).toggleClass('disabled');
     });
 
     $("div#bw_b button#go").click(function(){
-        $(this).toggleClass('disabled');
         calibrate_bw_detector('b');
-        $(this).toggleClass('disabled');
     });
 
     $("div#white_balance button#go").click(function(){
-        $(this).toggleClass('disabled');
-        calibrate_white_balance();
-        $(this).toggleClass('disabled');
+        calibrate_color_detector('w');
     });
 
     $("div#black_levels button#go").click(function(){
-        $(this).toggleClass('disabled');
-        calibrate_black_levels();
-        $(this).toggleClass('disabled');
+        calibrate_color_detector('b');
     });
 
 });
