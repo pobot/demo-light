@@ -35,7 +35,7 @@ class WSBarrierSample(RequestHandler, Logged):
 
 
 class WSBarrierLight(RequestHandler, Logged):
-    def post(self, state):
+    def post(self):
         status = self.get_argument("status") == '1'
         self.application.controller.set_barrier_light(status);
 
@@ -75,8 +75,9 @@ class WSBWDetectorSample(RequestHandler, Logged):
 
 
 class WSBWDetectorLight(RequestHandler, Logged):
-    def post(self, state):
-        self.application.controller.set_bw_detector_light(state == '1');
+    def post(self):
+        status = self.get_argument("status") == '1'
+        self.application.controller.set_bw_detector_light(status);
 
 
 class WSBWDetectorCalibrationSample(WSBWDetectorSample):
