@@ -49,13 +49,13 @@ $(document).ready(function() {
         }
     }
 
-    function get_sample(detection_active) {
+    function get_sample(with_detection) {
         $.ajax({
             url: document.location.href + "/sample",
             dataType: "json",
             success: function(data) {
                 update_meter(data.current);
-                if (detection_active) {
+                if (with_detection) {
                     img_ball.attr("src", "/img/ball-" + data.color + ".png");
                 }
             },
@@ -71,13 +71,13 @@ $(document).ready(function() {
         });
     }
 
-    function activate_sampler(detection_active) {
+    function activate_sampler(with_detection) {
         if (!sampler) {
-            if (detection_active) {
+            if (with_detection) {
                 set_light_source(true);
             }
             sampler = setInterval(function() {
-                get_sample(detection_active);
+                get_sample(with_detection);
             }, 1000);
             $("button.exp-control").toggleClass('disabled');
         }
