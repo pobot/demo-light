@@ -105,10 +105,10 @@ class DemonstratorController(object):
         self._shunts = self.settings['shunts']
         self._thresholds = self.settings['thresholds']
 
-        # barrier sensor input levels for ambient and lightened states
+        # barrier sensor input levels for free and cut states
         self._barrier_reference_levels = [0, 0]
 
-        # B/W sensor input levels for ambient and lightened states
+        # B/W sensor input levels for black and white objects
         self._bw_detector_reference_levels = [0, 0]
 
         # color sensor reference levels
