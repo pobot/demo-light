@@ -64,9 +64,11 @@ class UIColorDetector(UIHandler):
 
 class UICalibration(UIHandler):
     def get(self, *args, **kwargs):
+        template_args = self.get_template_args()
+        template_args["calibration_cfg"] = self.application.controller.get_calibration_cfg_as_dict()
         self.render(
             os.path.join(self.application.template_home, "calibration.html"),
-            **self.get_template_args()
+            **template_args
         )
 
 

@@ -14,8 +14,17 @@
     Calibrage
 </div>
 
-<div id="running" class="overlay invisible">
-    <div class="spinner"></div>
+<div id="running" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Calibrage en cours...</h4>
+            </div>
+            <div class="modal-body">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row translucent">
@@ -23,8 +32,9 @@
         <div id="barrier" class="panel panel-default">
             <div class="panel-heading">
                 Barrière lumineuse
+                <div id="calibrated" class="calibration-status text-success">calibrée</div>
             </div>
-            <div id="barrier_free" class="panel-body">
+            <div id="barrier_0" class="panel-body">
                 <div class="col-md-5">
                     <p><strong>Retirez tout objet</strong> de la barrière, puis cliquez sur le bouton
                         <strong><span class="text text-success">Calibrer</span></strong></p>
@@ -38,7 +48,7 @@
                     </ul>
                 </div>
             </div>
-            <div id="barrier_cut" class="panel-body">
+            <div id="barrier_1" class="panel-body">
                 <div class="col-md-5">
                     <p><strong>Placez un objet</strong> dans la barrière, puis cliquez sur le bouton
                         <strong><span class="text text-success">Calibrer</span></strong></p>
@@ -48,14 +58,16 @@
                 </div>
                 <div class="col-md-6">
                     <ul class="step-list">
-                        {% module CalibrationStep("step-1", "barrière coupée") %}
+                        {% module CalibrationStep("step-1", "barrière occupée") %}
                     </ul>
                 </div>
             </div>
         </div>
+
         <div id="bw_detector" class="panel panel-default">
             <div class="panel-heading">
                 Détecteur noir/blanc
+                <div id="calibrated" class="calibration-status text-success">calibré</div>
             </div>
             <div id="bw_w" class="panel-body">
                 <div class="col-md-5">
@@ -86,9 +98,11 @@
                 </div>
             </div>
         </div>
-        <div class="panel panel-default">
+
+        <div id="color" class="panel panel-default">
             <div class="panel-heading">
                 Détecteur de couleur
+                <div id="calibrated" class="calibration-status text-success">calibré</div>
             </div>
             <div id="white_balance" class="panel-body">
                 <div class="col-md-5">

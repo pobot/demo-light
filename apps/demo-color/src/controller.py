@@ -3,6 +3,7 @@
 
 __author__ = 'Eric Pascual'
 
+import configuration
 
 ADCPi = None
 BlinkM = None
@@ -51,73 +52,70 @@ class DemonstratorController(object):
         'white'
     )
 
-    settings = {
-        'debug': False,
-        'simulated_hw': False,
-        'blinkm_addr': 0x09,
-        'adc1_addr': 0x68,
-        'adc2_addr': 0x69,
-        'adc_bits': 12,
-        'adc_barrier': 1,
-        'gpio_barrier': 12,
-        'adc_bw_detector': 2,
-        'gpio_bw_detector': 13,
-        'adc_color_detector': 3,
-        'shunts': [10000] * 3,
-        'thresholds': [0.42] * 3
-    }
-
     COLOR_COMPONENTS = (
-        # RGB
+        # (R, G, B)
         (0, 0, 0),
         (255, 0, 0),
         (0, 255, 0),
         (0, 0, 255)
     )
 
-    def __init__(self, runtime_settings):
-        # override default settings with runtime provided ones
-        self.settings.update(runtime_settings)
+    def __init__(self, debug=False, simulation=False, cfg_dir=None):
+        self._system_cfg = configuration.SystemConfiguration(
+            cfg_dir=cfg_dir,
+            autoload=True
+        )
 
-        set_simulation_mode(self.settings['simulated_hw'])
+        set_simulation_mode(simulation)
 
-        self._blinkm = BlinkM(addr=self.settings['blinkm_addr'])
+        self._blinkm = BlinkM(addr=self._system_cfg.blinkm_addr)
         self._blinkm.reset()
 
-        self._adc = ADCPi(self.settings['adc1_addr'], self.settings['adc2_addr'], self.settings['adc_bits'])
+        self._adc = ADCPi(
+            self._system_cfg.adc1_addr,
+            self._system_cfg.adc2_addr,
+            self._system_cfg.adc_bits
+        )
 
         GPIO.setmode(GPIO.BOARD)
 
-        self._adc_barrier = self.settings['adc_barrier']
-        self._gpio_barrier = self.settings['gpio_barrier']
+        self._barrier_adc = self._system_cfg.barrier_adc
+        self._barrier_led_gpio = self._system_cfg.barrier_led_gpio
 
-        GPIO.setup(self._gpio_barrier, GPIO.OUT)
+        GPIO.setup(self._barrier_led_gpio, GPIO.OUT)
 
-        self._adc_bw_detector = self.settings['adc_bw_detector']
-        self._gpio_bw_detector = self.settings['gpio_bw_detector']
+        self._bw_detector_adc = self._system_cfg.bw_detector_adc
+        self._bw_detector_led_gpio = self._system_cfg.bw_detector_led_gpio
 
-        GPIO.setup(self._gpio_bw_detector, GPIO.OUT)
+        GPIO.setup(self._bw_detector_led_gpio, GPIO.OUT)
 
-        self._adc_color_detector = self.settings['adc_color_detector']
+        self._color_detector_adc = self._system_cfg.color_detector_adc
 
-        self._port = self.settings['port']
+        self._listen_port = self._system_cfg.listen_port
 
-        self._shunts = self.settings['shunts']
-        self._thresholds = self.settings['thresholds']
+        self._shunts = self._system_cfg.shunts
 
-        # barrier sensor input levels for free and cut states
-        self._barrier_reference_levels = [0, 0]
+        # process stored calibration data
 
-        # B/W sensor input levels for black and white objects
-        self._bw_detector_reference_levels = [0, 0]
+        self._barrier_threshold = \
+            self._bw_detector_threshold = \
+            self._white_rgb_levels = \
+            self._black_rgb_levels = None
 
-        # color sensor reference levels
-        self._color_detector_reference_levels = {
-            # white RGB
-            'w': (0, 0, 0),
-            # black RGB
-            'b': (0, 0, 0)
-        }
+        self._calibration_cfg = configuration.CalibrationConfiguration(
+            cfg_dir=cfg_dir,
+            autoload=True
+        )
+
+        if self._calibration_cfg.barrier_is_set():
+            self.set_barrier_reference_levels(self._calibration_cfg.barrier)
+
+        if self._calibration_cfg.bw_detector_is_set():
+            self.set_bw_detector_reference_levels(self._calibration_cfg.bw_detector)
+
+        if self._calibration_cfg.color_detector_is_set():
+            self.set_color_detector_reference_levels('w', self._calibration_cfg.color_detector_white)
+            self.set_color_detector_reference_levels('b', self._calibration_cfg.color_detector_black)
 
     @property
     def blinkm(self):
@@ -141,67 +139,94 @@ class DemonstratorController(object):
         return self._shunts[input_id]
 
     def threshold(self, input_id):
-        return self._thresholds[input_id]
+        if input_id == self.LDR_BARRIER:
+            return self._barrier_threshold
+        elif input_id == self.LDR_BW:
+            return self._bw_detector_threshold
+        else:
+            raise ValueError('no threshold defined for input (%d)' % input_id)
+
+    def sample_barrier_input(self):
+        v = self.adc.readVoltage(self._barrier_adc)
+        i_mA = v / self._shunts[self.LDR_BARRIER] * 1000.
+        return i_mA
+
+    def set_barrier_reference_levels(self, level_free, level_occupied):
+        self._calibration_cfg.barrier = [level_free, level_occupied]
+        self._barrier_threshold = (level_free + level_occupied) / 2.
 
     def set_barrier_light(self, on):
-        GPIO.output(self._gpio_barrier, 1 if on else 0)
+        GPIO.output(self._barrier_led_gpio, 1 if on else 0)
 
-    def analyze_barrier_input(self):
-        v = self.adc.readVoltage(self._adc_barrier)
-        i_mA = v / self._shunts[self.LDR_BARRIER] * 1000.
-        detection = i_mA < self._thresholds[self.LDR_BARRIER]
-        return i_mA, detection
+    def barrier_is_calibrated(self):
+        return self._barrier_threshold is not None
 
-    def set_barrier_reference_levels(self, level_ambient, level_lightened):
-        self._barrier_reference_levels = [level_ambient, level_lightened]
-        self._thresholds[self.LDR_BARRIER] = (level_ambient + level_lightened) / 2
+    def analyze_barrier_input(self, i_mA):
+        if not self.barrier_is_calibrated():
+            raise NotCalibrated('barrier')
+
+        detection = i_mA < self._barrier_threshold
+        return detection
+
+    def sample_bw_detector_input(self):
+        v = self.adc.readVoltage(self._bw_detector_adc)
+        i_mA = v / self._shunts[self.LDR_BW] * 1000.
+        return i_mA
+
+    def set_bw_detector_reference_levels(self, level_black, level_white):
+        self._calibration_cfg.bw_detector = [level_black, level_white]
+        self._bw_detector_threshold = (level_black + level_white) / 2.
 
     def set_bw_detector_light(self, on):
-        GPIO.output(self._gpio_bw_detector, 1 if on else 0)
+        GPIO.output(self._bw_detector_led_gpio, 1 if on else 0)
 
-    def analyze_bw_detector_input(self):
-        v = self.adc.readVoltage(self._adc_bw_detector)
-        i_mA = v / self._shunts[self.LDR_BW] * 1000.
-        color = self.BW_BLACK if i_mA < self._thresholds[self.LDR_BW] else self.BW_WHITE
-        return i_mA, color
+    def bw_detector_is_calibrated(self):
+        return self._bw_detector_threshold is not None
 
-    def set_bw_detector_reference_levels(self, level_ambient, level_lightened):
-        self._bw_detector_reference_levels = [level_ambient, level_lightened]
-        self._thresholds[self.LDR_BW] = (level_ambient + level_lightened) / 2
+    def analyze_bw_detector_input(self, i_mA):
+        if not self.bw_detector_is_calibrated():
+            raise NotCalibrated('bw_detector')
 
-    def set_color_detector_light(self, color):
-        self._blinkm.go_to(*(self.COLOR_COMPONENTS[color]))
+        color = self.BW_BLACK if i_mA < self._bw_detector_threshold else self.BW_WHITE
+        return color
 
     def sample_color_detector_input(self):
-        v = self.adc.readVoltage(self._adc_color_detector)
+        v = self.adc.readVoltage(self._color_detector_adc)
         i_mA = v / self._shunts[self.LDR_COLOR] * 1000.
         return i_mA
 
     def set_color_detector_reference_levels(self, white_or_black, levels):
-        if white_or_black in self._color_detector_reference_levels:
-            self._color_detector_reference_levels[white_or_black] = levels[:]
+        if white_or_black == 'b':
+            self._calibration_cfg.color_detector_black = levels[:]
+        elif white_or_black == 'w':
+            self._calibration_cfg.color_detector_white = levels[:]
         else:
             raise ValueError("invalid white/black option (%s)" % white_or_black)
 
-    def color_detector_calibrated(self):
-        return all(any(c > 0 for c in refs) for refs in self._color_detector_reference_levels.itervalues())
+    def set_color_detector_light(self, color):
+        self._blinkm.go_to(*(self.COLOR_COMPONENTS[color]))
 
+    def color_detector_is_calibrated(self):
+        return self._calibration_cfg.color_detector_is_set()
 
-    def analyze_color(self, rgb_sample):
+    def analyze_color_input(self, rgb_sample):
+        if not self.color_detector_is_calibrated():
+            raise NotCalibrated('color_detector')
+
         # normalize color components in [0, 1] and in the white-black range
         rgb_sample = [float(s) for s in rgb_sample]
         comps = [max((s - b) / (w - b), 0)
                  for w, b, s in zip(
-                self._color_detector_reference_levels['w'],
-                self._color_detector_reference_levels['b'],
+                self._calibration_cfg.color_detector_white,
+                self._calibration_cfg.color_detector_black,
                 rgb_sample
             )]
 
         sum_comps = sum(comps)
         if sum_comps > 0:
-            decomp = [c / sum_comps for c in comps]
+            relative_levels = [c / sum_comps for c in comps]
         else:
-            decomp = [0] * 3
+            relative_levels = [0] * 3
 
         min_comps, max_comps = min(comps), max(comps)
 
@@ -210,10 +235,24 @@ class DemonstratorController(object):
         elif max_comps < 0.2:
             color = self.COLOR_BLACK
         else:
-            over_50 = [c > 0.5 for c in decomp]
+            over_50 = [c > 0.5 for c in relative_levels]
             if any(over_50):
                 color = over_50.index(True) + 1
             else:
                 color = self.COLOR_UNDEF
 
-        return color, decomp
+        return color, relative_levels
+
+    def save_calibration(self):
+        self._calibration_cfg.save()
+
+    def get_calibration_cfg_as_dict(self):
+        return self._calibration_cfg.as_dict()
+
+
+class ControllerException(Exception):
+    pass
+
+
+class NotCalibrated(ControllerException):
+    pass

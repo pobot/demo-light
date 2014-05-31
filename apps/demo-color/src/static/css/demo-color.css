@@ -2,6 +2,11 @@
     text-align: center;
 }
 
+.modal {
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
 table {
     width: 100%;
 }
@@ -31,4 +36,8 @@ label.text-left {
 
 div.page-title {
     font-size: 200%;
+}
+
+ul.dropdown-menu li {
+    text-align: left;
 }

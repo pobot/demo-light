@@ -45,6 +45,16 @@ $(document).ready(function() {
         img_bulb.attr("src", "/img/bulb-south-" + COLOR_NAMES[color] + ".png");
     }
 
+    function enable_activation_buttons(enable) {
+        if (enable) {
+            $("button.exp-control-on").removeClass('disabled');
+            $("button.exp-control-off").addClass('disabled');
+        } else {
+            $("button.exp-control-on").addClass('disabled');
+            $("button.exp-control-off").removeClass('disabled');
+        }
+    }
+
     function set_light_source(color_id) {
         $.post(
             document.location.href + "/light/" + LIGHT_COLOR_CODES[color_id]
@@ -76,7 +86,7 @@ $(document).ready(function() {
             img_ball.attr("src", "/img/ball-none.png");
             bar_graphs_container.addClass("invisible");
             clear_meters();
-            $("button.exp-control").toggleClass('disabled');
+            enable_activation_buttons(true);
 
             set_light_source(OFF);
         }
@@ -96,6 +106,9 @@ $(document).ready(function() {
                     },
                     1000
                 );
+            } else {
+                sampler_timer = null;
+                enable_activation_buttons(true);
             }
 
         }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -111,7 +124,7 @@ $(document).ready(function() {
 
     function activate_sampler() {
         if (!analyzer_timer && !sampler_timer) {
-            $("button.exp-control").toggleClass('disabled');
+            enable_activation_buttons(false);
             measure_display_simple.removeClass("invisible");
             measure_display_rgb.addClass("invisible");
             bar_graphs_container.addClass("invisible");
@@ -135,7 +148,7 @@ $(document).ready(function() {
         return mi;
     }
 
-    function analyze(repeat) {
+    function sample_and_analyze(repeat) {
         analyzed_color = (analyzed_color % 3) + 1;
 
         $.post(
@@ -166,6 +179,7 @@ $(document).ready(function() {
             }
 
         }).done(function(data) {
+            var end_of_cycle = false;
             if (data.color) {
                 img_ball.attr("src", "/img/ball-" + data.color + ".png");
 
@@ -174,15 +188,19 @@ $(document).ready(function() {
                     var pct = Math.round(data.decomp[i]) + "%";
                     bar_graphs[i].width(pct).text(pct);
                 }
+                end_of_cycle = true;
             }
 
-            if (repeat) {
+            if (!end_of_cycle || repeat) {
                 analyzer_timer = setTimeout(
                     function() {
-                        return analyze(repeat);
+                        return sample_and_analyze(repeat);
                     },
                     1000
                 );
+            } else {
+                analyzer_timer = null;
+                enable_activation_buttons(true);
             }
 
         }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -196,17 +214,17 @@ $(document).ready(function() {
         });
     }
 
-    function activate_analyzer() {
+    function activate_analyzer(repeat) {
         if (!analyzer_timer && !sampler_timer) {
             $.getJSON(document.location.href + "/status")
             .done(function(result) {
                 if (result.calibrated) {
-                    $("button.exp-control").toggleClass('disabled');
+                    enable_activation_buttons(false);
                     measure_display_simple.addClass("invisible");
                     measure_display_rgb.removeClass("invisible");
 
                     analyzed_color = OFF;
-                    analyze(true);
+                    sample_and_analyze(repeat);
                 } else {
                     jError("Le détecteur doit avoir été calibré avant.");
                 }
@@ -227,7 +245,17 @@ $(document).ready(function() {
     });
 
     $("button#detection-on").click(function(){
-        activate_analyzer();
+        activate_analyzer(false);
+    });
+
+    $("#detection-single").click(function(e){
+        activate_analyzer(false);
+        e.preventDefault();
+    });
+
+    $("#detection-auto").click(function(e){
+        activate_analyzer(true);
+        e.preventDefault();
     });
 
     $("button#experiment-end").click(stop_sampling);

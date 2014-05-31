@@ -15,24 +15,24 @@ $(document).ready(function() {
     }
 
     function set_light_source(status) {
-        $.ajax({
-            url: document.location.href + "/light",
-            data: {
-                "status": status ? "1" : "0"
-            },
-            method: "POST",
-            success: function() {
-                update_bulb(status);
-                $("button.bulb-control").toggleClass("disabled");
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                jError(
-                    "Erreur imprévue : <br>" + errorThrown,
-                    {
-                        HideTimeEffect: 500
-                    }
-                );
+        $.post(
+            document.location.href + "/light", {"status": status ? "1" : "0"}
+        ).done(function() {
+            update_bulb(status);
+            if (status) {
+                $("button#bulb-on").addClass("disabled");
+                $("button#bulb-off").removeClass("disabled");
+            } else {
+                $("button#bulb-off").addClass("disabled");
+                $("button#bulb-on").removeClass("disabled");
             }
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            jError(
+                "Erreur imprévue : <br>" + errorThrown,
+                {
+                    HideTimeEffect: 500
+                }
+            );
         });
     }
 
@@ -49,37 +49,48 @@ $(document).ready(function() {
         }
     }
 
-    function get_sample(with_detection) {
-        $.ajax({
-            url: document.location.href + "/sample",
-            dataType: "json",
-            success: function(data) {
-                update_meter(data.current);
-                if (with_detection) {
-                    img_ball.attr("src", "/img/ball-" + data.color + ".png");
-                }
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                jError(
-                    "Erreur mesure : <br>" + errorThrown,
-                    {
-                        HideTimeEffect: 500
-                    }
-                );
-                stop_sampling();
+    function get_sample(analyze_sample) {
+        $.getJSON(
+            document.location.href +  (analyze_sample ? "/analyze" : "/sample")
+        ).done(function(data) {
+            update_meter(data.current);
+            if (analyze_sample) {
+                img_ball.attr("src", "/img/ball-" + data.color + ".png");
             }
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            jError(
+                "Erreur mesure : <br>" + errorThrown,
+                {
+                    HideTimeEffect: 500
+                }
+            );
+            stop_sampling();
         });
     }
 
-    function activate_sampler(with_detection) {
+    function activate_sampler() {
         if (!sampler) {
-            if (with_detection) {
-                set_light_source(true);
-            }
             sampler = setInterval(function() {
-                get_sample(with_detection);
+                get_sample(false);
             }, 1000);
             $("button.exp-control").toggleClass('disabled');
+        }
+    }
+
+    function activate_analyzer() {
+        if (!sampler) {
+            $.getJSON(document.location.href + "/status")
+            .done(function(result) {
+                if (result.calibrated) {
+                    set_light_source(true);
+                    sampler = setInterval(function () {
+                        get_sample(true);
+                    }, 1000);
+                    $("button.exp-control").toggleClass('disabled');
+                } else {
+                    jError("Le détecteur doit avoir été calibré avant.");
+                }
+            });
         }
     }
 
@@ -92,11 +103,11 @@ $(document).ready(function() {
     });
 
     $("button#sampling-on").click(function(){
-        activate_sampler(false);
+        activate_sampler();
     });
 
     $("button#detection-on").click(function(){
-        activate_sampler(true);
+        activate_analyzer();
     });
 
     $("button#experiment-end").click(stop_sampling);

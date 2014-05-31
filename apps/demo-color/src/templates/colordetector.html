@@ -55,18 +55,30 @@
     <tr>
         <td rowspan="4"><img src="/img/colordetector-circuit.svg"></td>
         <td colspan="2" class="experiment-controls">
-            <button id="sampling-on" class="btn btn-success exp-control">Mesure</button>
+            <button id="sampling-on" class="btn btn-success exp-control exp-control-on">Mesure</button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-success dropdown-toggle exp-control exp-control-on" data-toggle="dropdown">
+                    Détection
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a id="detection-single" href="#">unique</a></li>
+                    <li><a id="detection-auto" href="#">répétition automatique</a></li>
+                </ul>
+            </div>
+            <!--
             <button id="detection-on" class="btn btn-success exp-control">Détection</button>
-            <button id="experiment-end" class="btn btn-danger exp-control disabled">Arrêt</button>
+            -->
+            <button id="experiment-end" class="btn btn-danger exp-control exp-control-off disabled">Arrêt</button>
         </td>
     </tr>
     <tr>
         <td style="width:250px" rowspan="2">
             <div class="btn-group-vertical">
-                <button id="bulb-red" class="btn btn-danger bulb-control">Rouge</button>
-                <button id="bulb-green" class="btn btn-success bulb-control">Vert</button>
-                <button id="bulb-blue" class="btn btn-info bulb-control">Bleu</button>
-                <button id="bulb-off" class="btn btn-primary bulb-control disabled">OFF</button>
+                <button id="bulb-red" class="btn btn-danger bulb-control bulb-control-on">Rouge</button>
+                <button id="bulb-green" class="btn btn-success bulb-control bulb-control-on">Vert</button>
+                <button id="bulb-blue" class="btn btn-info bulb-control bulb-control-on">Bleu</button>
+                <button id="bulb-off" class="btn btn-primary bulb-control bulb-control-off disabled">OFF</button>
             </div>
             <img id="bulb"/>
         </td>
