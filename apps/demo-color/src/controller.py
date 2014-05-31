@@ -108,10 +108,10 @@ class DemonstratorController(object):
         )
 
         if self._calibration_cfg.barrier_is_set():
-            self.set_barrier_reference_levels(self._calibration_cfg.barrier)
+            self.set_barrier_reference_levels(*self._calibration_cfg.barrier)
 
         if self._calibration_cfg.bw_detector_is_set():
-            self.set_bw_detector_reference_levels(self._calibration_cfg.bw_detector)
+            self.set_bw_detector_reference_levels(*self._calibration_cfg.bw_detector)
 
         if self._calibration_cfg.color_detector_is_set():
             self.set_color_detector_reference_levels('w', self._calibration_cfg.color_detector_white)
