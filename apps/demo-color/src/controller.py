@@ -4,6 +4,7 @@
 __author__ = 'Eric Pascual'
 
 import configuration
+import logging
 
 ADCPi = None
 BlinkM = None
@@ -61,6 +62,8 @@ class DemonstratorController(object):
     )
 
     def __init__(self, debug=False, simulation=False, cfg_dir=None):
+        self._log = logging.getLogger(self.__class__.__name__)
+
         self._system_cfg = configuration.SystemConfiguration(
             cfg_dir=cfg_dir,
             autoload=True
@@ -69,7 +72,11 @@ class DemonstratorController(object):
         set_simulation_mode(simulation)
 
         self._blinkm = BlinkM(addr=self._system_cfg.blinkm_addr)
-        self._blinkm.reset()
+        try:
+            self._blinkm.reset()
+        except IOError:
+            self._log.error("BlinkM reset error. Maybe not here")
+            self._blinkm = None
 
         self._adc = ADCPi(
             self._system_cfg.adc1_addr,
@@ -204,7 +211,10 @@ class DemonstratorController(object):
             raise ValueError("invalid white/black option (%s)" % white_or_black)
 
     def set_color_detector_light(self, color):
-        self._blinkm.go_to(*(self.COLOR_COMPONENTS[color]))
+        if self._blinkm:
+            self._blinkm.go_to(*(self.COLOR_COMPONENTS[color]))
+        else:
+            self._log.error("BlinkM not available")
 
     def color_detector_is_calibrated(self):
         return self._calibration_cfg.color_detector_is_set()
