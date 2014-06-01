@@ -2,9 +2,10 @@
 
 if [ "$INSTALL_DEPS" == "1" ] ; then
     pip install tornado
+    pip install backports.ssl-match-hostname
 fi
 
-SVC_NAME="pobot-color-demo"
+SVC_NAME="pobot-demo-color"
 
 update-rc.d $SVC_NAME defaults
 
