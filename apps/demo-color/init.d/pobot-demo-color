@@ -14,7 +14,7 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="POBOT light and color sensing demonstrator"
 NAME=pobot-demo-color
-DAEMON=/opt/pobot-demo-color/bin/launch.py
+DAEMON=/opt/pobot-demo-color/launch.py
 # DAEMON_ARGS="<optional daemon arguments>"
 # INIT_VERBOSE=yes
 
