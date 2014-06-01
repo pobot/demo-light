@@ -50,6 +50,9 @@ update_build_tree:
 	# init script
 	cp -a ../init.d/$(APP_NAME) $(BUILD_INIT_D)
 
+	# application default configuration
+	cp -a ./etc/$(APP_NAME)/* $(BUILD_ETC)
+
 	# third party libraries
 	$(RSYNC) \
 		--filter "-s .*" \
