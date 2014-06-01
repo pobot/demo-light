@@ -6,7 +6,7 @@ __author__ = 'Eric Pascual'
 import os
 import json
 
-APP_NAME = 'demo-light-sensors'
+APP_NAME = 'pobot-demo-color'
 
 
 class Configuration(object):
