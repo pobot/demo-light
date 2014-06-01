@@ -81,6 +81,9 @@ class DemoColorApp(tornado.web.Application):
         self.debug = debug
         if self.debug:
             self.log.setLevel(logging.DEBUG)
+        else:
+            # avoid Tornado logging all access requests if not in debug mode
+            logging.getLogger("tornado.access").setLevel(logging.WARN)
 
         self.settings['debug'] = debug
         super(DemoColorApp, self).__init__(self.handlers, **self.settings)
