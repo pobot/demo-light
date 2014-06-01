@@ -43,7 +43,6 @@ $(document).ready(function() {
             clearInterval(sampler);
             sampler = null;
             $("button.exp-control").toggleClass('disabled');
-
             set_light_source(false);
         }
     }
@@ -115,7 +114,11 @@ $(document).ready(function() {
 
     $("button#experiment-end").click(stop_sampling);
 
-    $(window).unload(stop_sampling);
+    $(window).unload(function() {
+        stop_sampling();
+        // ensure light is turned off
+        set_light_source(false);
+    });
 
     update_meter(0);
     update_bulb(false);
