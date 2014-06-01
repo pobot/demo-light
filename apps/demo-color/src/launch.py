@@ -7,8 +7,7 @@
 __author__ = 'Eric Pascual (for POBOT)'
 
 import logging
-import os
-import json
+import sys
 
 from webapp import DemoColorApp
 from controller import DemonstratorController
@@ -66,6 +65,7 @@ if __name__ == '__main__':
 
     except Exception as e:
         log.exception('unexpected error - aborting')
+        sys.exit(1)
 
     else:
         log.info('terminated')
