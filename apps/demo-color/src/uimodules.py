@@ -1,21 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from collections import namedtuple
-import datetime
 import os.path
-from operator import itemgetter
 
 from tornado.web import UIModule
 
-from pjc.tournament import Tournament
-
-
-__author__ = 'eric'
+__author__ = 'Eric Pascual'
 
 
 class UIModuleBase(UIModule):
-    """ Base class for tournament UI modules implementation.
+    """ Base class for UI modules implementation.
 
     Shares the rendering process common operations so that concrete module implementations
     have no boiler plate code to repeat over and over.
