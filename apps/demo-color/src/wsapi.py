@@ -139,7 +139,7 @@ class WSColorDetectorSample(RequestHandler, Logged):
         color = self.get_argument('color', None)
         if color and color in '0rgb':
             self.application.controller.set_color_detector_light('0rgb'.index(color))
-            time.sleep(1)
+        time.sleep(1)
 
         try:
             current_mA = self.application.controller.sample_color_detector_input()
@@ -150,6 +150,9 @@ class WSColorDetectorSample(RequestHandler, Logged):
             self.finish(json.dumps({
                 "current": current_mA
             }))
+        finally:
+            if color:
+                self.application.controller.set_color_detector_light(0)
 
 
 class WSColorDetectorAnalyze(RequestHandler):
