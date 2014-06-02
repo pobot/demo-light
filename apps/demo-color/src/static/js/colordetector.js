@@ -28,6 +28,7 @@ $(document).ready(function() {
 
     var sampler_timer = null;
     var analyzer_timer = null;
+    var stop_requested = false;
 
     function update_meter(value) {
         measure.text(value.toFixed(3));
@@ -64,6 +65,8 @@ $(document).ready(function() {
             $("button.bulb-control.disabled").removeClass("disabled");
             $("button#bulb-" + COLOR_NAMES[color_id]).addClass("disabled");
 
+            return $.Deferred();
+
         }).fail(function(jqXHR, textStatus, errorThrown) {
             jError(
                 "Erreur imprévue : <br>" + errorThrown,
@@ -76,13 +79,8 @@ $(document).ready(function() {
 
     function stop_sampling() {
         if (sampler_timer || analyzer_timer) {
-            if (sampler_timer) {
-                clearTimeout(sampler_timer);
-                sampler_timer = null;
-            } else {
-                clearTimeout(analyzer_timer);
-                analyzer_timer = null;
-            }
+            stop_requested = true;
+
             img_ball.attr("src", "/img/ball-none.png");
             bar_graphs_container.addClass("invisible");
             clear_meters();
@@ -99,7 +97,7 @@ $(document).ready(function() {
         ).done(function(data) {
             update_meter(data.current);
 
-            if (repeat) {
+            if (repeat && !stop_requested) {
                 sampler_timer = setTimeout(
                     function() {
                         return get_sample(repeat);
@@ -109,6 +107,7 @@ $(document).ready(function() {
             } else {
                 sampler_timer = null;
                 enable_activation_buttons(true);
+                stop_requested = false;
             }
 
         }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -180,6 +179,8 @@ $(document).ready(function() {
 
         }).done(function(data) {
             var end_of_cycle = false;
+            var delay = 0;
+
             if (data.color) {
                 img_ball.attr("src", "/img/ball-" + data.color + ".png");
 
@@ -189,18 +190,24 @@ $(document).ready(function() {
                     bar_graphs[i].width(pct).text(pct);
                 }
                 end_of_cycle = true;
+                set_light_source(OFF);
+                // make a pause at the end of the cycle when repeat is active
+                if (repeat)
+                    delay = 1000;
             }
 
-            if (!end_of_cycle || repeat) {
+            if (stop_requested || (end_of_cycle && !repeat)) {
+                stop_requested = false;
+                analyzer_timer = null;
+                enable_activation_buttons(true);
+
+            } else {
                 analyzer_timer = setTimeout(
                     function() {
                         return sample_and_analyze(repeat);
                     },
-                    1000
+                    delay
                 );
-            } else {
-                analyzer_timer = null;
-                enable_activation_buttons(true);
             }
 
         }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -260,7 +267,11 @@ $(document).ready(function() {
 
     $("button#experiment-end").click(stop_sampling);
 
-    $(window).unload(stop_sampling);
+    $(window).unload(function(){
+        stop_sampling();
+        // ensure LED is off
+        set_light_source(OFF);
+    });
 
     update_meter(0);
     update_bulb(OFF);
