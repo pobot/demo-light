@@ -57,8 +57,10 @@ class DemonstratorController(object):
         # (R, G, B)
         (0, 0, 0),
         (255, 0, 0),
-        (0, 255, 0),
-        (0, 0, 255)
+        (0, 128, 0),
+        (0, 0, 255),
+        (0, 0, 0),
+        (255, 255, 255)
     )
 
     def __init__(self, debug=False, simulation=False, cfg_dir=None):
@@ -224,6 +226,7 @@ class DemonstratorController(object):
             raise NotCalibrated('color_detector')
 
         # normalize color components in [0, 1] and in the white-black range
+        self._log.debug("analyze %s", rgb_sample)
         rgb_sample = [float(s) for s in rgb_sample]
         comps = [max((s - b) / (w - b), 0)
                  for w, b, s in zip(
@@ -231,12 +234,14 @@ class DemonstratorController(object):
                 self._calibration_cfg.color_detector_black,
                 rgb_sample
             )]
+        self._log.debug("--> comps=%s", comps)
 
         sum_comps = sum(comps)
         if sum_comps > 0:
             relative_levels = [c / sum_comps for c in comps]
         else:
             relative_levels = [0] * 3
+        self._log.debug("--> relative_levels=%s", relative_levels)
 
         min_comps, max_comps = min(comps), max(comps)
 
@@ -251,6 +256,7 @@ class DemonstratorController(object):
             else:
                 color = self.COLOR_UNDEF
 
+        self._log.debug("--> color=%s", self.COLOR_NAMES[color])
         return color, relative_levels
 
     def save_calibration(self):
