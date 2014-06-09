@@ -13,6 +13,8 @@ DEBPKG_NAME?=$(APP_NAME)_$(VERSION)_all
 
 RSYNC=rsync -Ca
 
+REMOTE=raspberrypi.local
+
 BUILD_ROOT=build
 BUILD_OPT=$(BUILD_ROOT)/opt/$(APP_NAME)
 BUILD_VAR_LIB=$(BUILD_ROOT)/var/lib/$(APP_NAME)
@@ -61,8 +63,11 @@ update_build_tree:
 		--exclude "test/" \
 		/usr/local/lib/python2.7/dist-packages/tornado $(BUILD_OPT)
 
-
 clean:
 	@echo '------ cleaning all...'
 	rm -rf $(BUILD_ROOT) $(DEBPKG_NAME).deb
 
+deploy: dist
+	scp $(DEBPKG_NAME).deb pi@$(REMOTE):
+
+.PHONY: dist deploy clean update_build_tree
