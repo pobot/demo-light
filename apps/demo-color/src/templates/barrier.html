@@ -47,21 +47,18 @@
             <img id="bulb"/>
         </td>
         <td><img id="ball" class="animated" src="/img/ball.png" style="display:none"/></td>
-        <td><img id="ldr" src="/img/ldr.png"/><br>LDR</td>
+        <td><img id="ldr" src="/img/ldr.png"/>&nbsp;LDR</td>
     </tr>
     <tr>
-        <td colspan="2">&nbsp;</td>
+        <td colspan="2" class="experiment-controls">
+            <button id="sampling-on" class="btn btn-success exp-control">Mesure</button>
+            <button id="detection-on" class="btn btn-success exp-control">Détection</button>
+            <button id="experiment-end" class="btn btn-danger exp-control disabled">Arrêt</button>
+        </td>
         <td>
             <div id="measure-display" class="well well-sm text-center text-info">
                 I = <span id="current">-</span> mA
             </div>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="3" class="experiment-controls">
-            <button id="sampling-on" class="btn btn-success exp-control">Mesure</button>
-            <button id="detection-on" class="btn btn-success exp-control">Détection</button>
-            <button id="experiment-end" class="btn btn-danger exp-control disabled">Arrêt</button>
         </td>
     </tr>
 </table>
