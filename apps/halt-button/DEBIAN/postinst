@@ -1,0 +1,9 @@
+#!/bin/bash
+
+SVC_NAME="halt-button"
+
+update-rc.d $SVC_NAME defaults
+
+if [ "$NO_START" != "1" ] ; then
+    service $SVC_NAME start
+fi
