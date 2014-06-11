@@ -1,5 +1,0 @@
-#!/bin/bash
-
-service halt-button stop
-# avoid uninstall failure if service already stopped
-exit 0

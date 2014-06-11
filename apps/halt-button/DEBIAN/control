@@ -1,9 +1,0 @@
-Package: halt-button
-Version: 1.0
-Section: base
-Priority: optional
-Architecture: all
-Depends: python (>= 2.7), python (<< 3.0)
-Maintainer: Eric Pascual <eric@pobot.org>
-Description: The deamon monitoring the button used to trigger the system halt
-    procedure
