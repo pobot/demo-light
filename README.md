@@ -1,5 +1,5 @@
-Interface utilisateur démonstrateurs capteurs de lumière
-========================================================
+Interface utilisateur des démonstrateurs de capteurs de lumière
+===============================================================
 
 Cette application Web pour RaspberryPi fournit l'interface utilisateur des 
 démonstrateurs pédagogiques utilisés pour présenter diverses
