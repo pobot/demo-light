@@ -54,7 +54,7 @@ class UIWBDetector(UIHandler):
 class UIColorDetector(UIHandler):
     def get(self, *args, **kwargs):
         template_args = self.get_template_args()
-        template_args['demo_title'] = "Détecteur couleur"
+        template_args['demo_title'] = "Analyseur de couleur"
 
         self.render(
             os.path.join(self.application.template_home, "colordetector.html"),
