@@ -15,7 +15,21 @@ $(document).ready(function() {
         }
     };
 
-    $("div.calibration-status").hide();
+    function set_calibrated(elt, done) {
+        if (done) {
+            elt.text("calibrage OK")
+                .removeClass("text-danger")
+                .addClass("text-success")
+            ;
+        } else {
+            elt.text("calibrage non fait")
+                .removeClass("text-success")
+                .addClass("text-danger")
+            ;
+        }
+    }
+
+    set_calibrated($("div.calibration-status"), false);
 
     $.getJSON(document.location.href + "/data").done(
         function(data) {
@@ -31,11 +45,16 @@ $(document).ready(function() {
                     $(parent_id + " span#value").text(value.toFixed(3));
                     $(parent_id + " span#level").removeClass("invisible");
                     $(parent_id + " span#status-led").addClass("done");
+                    if (step == 0) {
+                        current_free = value;
+                    } else {
+                        current_occupied = value;
+                    }
                     done++;
                 }
             }
             if (done == step) {
-                $("div#barrier div#calibrated").show();
+                set_calibrated($("div#barrier div.calibration-status"), true);
             }
 
             for (step=done=0; step<2; step++) {
@@ -45,11 +64,16 @@ $(document).ready(function() {
                     $(parent_id + " span#value").text(value.toFixed(3));
                     $(parent_id + " span#level").removeClass("invisible");
                     $(parent_id + " span#status-led").addClass("done");
+                    if (step == 0) {
+                        current_black = value;
+                    } else {
+                        current_white = value;
+                    }
                     done++;
                 }
             }
             if (done == step) {
-                $("div#bw_detector div#calibrated").show();
+                set_calibrated($("div#bw_detector div.calibration-status"), true);
             }
 
             var done_color_steps = 0;
@@ -65,6 +89,7 @@ $(document).ready(function() {
                 }
             }
             if (done == step) {
+                color_done_w = true;
                 done_color_steps++;
             }
 
@@ -79,11 +104,12 @@ $(document).ready(function() {
                 }
             }
             if (done == step) {
+                color_done_b = true;
                 done_color_steps++;
             }
 
             if (done_color_steps == 2) {
-                $("div#color div#calibrated").show();
+                set_calibrated($("div#color div.calibration-status"), true);
             }
         }
     );
@@ -123,7 +149,7 @@ $(document).ready(function() {
 
         calibration_started("Calibrage barrière lumineuse démarré.");
 
-        $(div + "#calibrated").hide();
+        set_calibrated($("div#barrier div.calibration-status"), false);
         $(div + "li span.status").removeClass("done");
         $(div + "span#level").addClass("invisible");
 
@@ -152,7 +178,7 @@ $(document).ready(function() {
         ).done(
             function(result) {
                 if (current_free !== 0 && current_occupied !== 0) {
-                    $("div#barrier div#calibrated").show();
+                    set_calibrated($("div#barrier div.calibration-status"), true);
                 }
                 success("Calibrage terminé.");
             }
@@ -170,6 +196,7 @@ $(document).ready(function() {
 
         calibration_started("Calibrage détecteur noir/blanc démarré.");
 
+        set_calibrated($("div#bw_detector div.calibration-status"), false);
         $(div +"li span.status").removeClass("done");
         $(div + "li#step-1 span#level").addClass("invisible");
 
@@ -198,7 +225,7 @@ $(document).ready(function() {
         ).done(
             function() {
                 if (current_black !== 0 && current_white !== 0) {
-                    $("div#bw_detector div#calibrated").show();
+                    set_calibrated($("div#bw_detector div.calibration-status"), true);
                 }
                 success("Calibrage terminé.");
             }
@@ -216,6 +243,7 @@ $(document).ready(function() {
 
         calibration_started("Balance des blancs démarrée.");
 
+        set_calibrated($("div#color div.calibration-status"), false);
         $(div + "li span.status").removeClass("done");
         $(div + "span#level").addClass("invisible");
 
@@ -269,7 +297,7 @@ $(document).ready(function() {
                 color_done_b = true;
             }
             if (color_done_w && color_done_b) {
-                $("div#color div#calibrated").show();
+                set_calibrated($("div#color div.calibration-status"), true);
             }
             success("Calibrage terminé.");
 
@@ -280,6 +308,13 @@ $(document).ready(function() {
             calibration_ended
         );
     }
+
+    $("div.panel-heading button").click(function(){
+        $("div.panel-body").hide();
+        $("div.panel-body", $(this).parents(".panel")).show();
+    });
+
+    $("div.panel-body").hide();
 
     $("div#barrier_0 button#go").click(function(){
         calibrate_barrier('0');

@@ -91,4 +91,5 @@ ul.step-list li span.done {
 div.calibration-status {
     float: right;
     font-weight: bold;
+    margin-top: 0.7em;
 }
